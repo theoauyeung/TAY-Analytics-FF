@@ -1,25 +1,24 @@
 import { useCallback } from 'react'
-import { useDraftContext, computeUserPickNumbers, picksUntilNextTurn } from '../state/draftState'
-import type { PlayerDetail } from '../types'
+import { useDraftContext, picksUntilNextTurn } from '../state/draftState'
+import { MOCK_PLAYERS } from '../data'
+import type { PlayerDetail, DraftConfig, DraftedPick, LiveDraftState } from '../types'
 
 export function useDraftState() {
   const { state, dispatch } = useDraftContext()
-  const { config, picks, currentOverallPick } = state
 
-  const currentRound = Math.min(
-    config.totalRounds,
-    Math.ceil(currentOverallPick / config.teams)
+  const picksUntil = picksUntilNextTurn(state)
+  const isUserTurn = picksUntil === 0
+
+  const userPicks: DraftedPick[] = state.picks.filter(p => p.isUserPick)
+
+  const draftedPlayerIds = new Set(state.picks.map(p => p.player.id))
+  const availablePlayers: PlayerDetail[] = MOCK_PLAYERS.filter(
+    p => !draftedPlayerIds.has(p.id)
   )
 
-  const userPickNumbers = computeUserPickNumbers(config)
-  const picksUntilNext = picksUntilNextTurn(state)
-
-  const draftedIds = new Set(picks.map(p => p.player.id))
-  const userRoster = picks.filter(p => p.isUserPick).map(p => p.player)
-
   const draftPlayer = useCallback(
-    (player: PlayerDetail, isUserPick: boolean) => {
-      dispatch({ type: 'DRAFT_PLAYER', player, isUserPick })
+    (player: PlayerDetail) => {
+      dispatch({ type: 'DRAFT_PLAYER', player, isUserPick: true })
     },
     [dispatch]
   )
@@ -34,23 +33,22 @@ export function useDraftState() {
     [dispatch]
   )
 
-  const isUserTurn = picksUntilNext === 0 && currentOverallPick <= config.teams * config.totalRounds
-  const isDraftComplete = currentOverallPick > config.teams * config.totalRounds
+  const updateConfig = useCallback(
+    (config: Partial<DraftConfig>) => {
+      dispatch({ type: 'UPDATE_CONFIG', config: { ...state.config, ...config } })
+    },
+    [dispatch, state.config]
+  )
 
   return {
     state,
-    config,
-    picks,
-    currentOverallPick,
-    currentRound,
-    picksUntilNext,
-    userPickNumbers,
-    draftedIds,
-    userRoster,
-    isUserTurn,
-    isDraftComplete,
     draftPlayer,
     undoLastPick,
     resetDraft,
+    updateConfig,
+    isUserTurn,
+    picksUntil,
+    availablePlayers,
+    userPicks,
   }
 }
