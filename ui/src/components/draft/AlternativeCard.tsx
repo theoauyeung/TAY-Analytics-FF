@@ -12,8 +12,11 @@ interface Props {
 
 export function AlternativeCard({ player, onDraftMe, isSelected, onClick }: Props) {
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') onClick?.() }}
       className={clsx(
         'w-full text-left p-3 rounded-xl border transition-colors',
         isSelected
@@ -57,6 +60,6 @@ export function AlternativeCard({ player, onDraftMe, isSelected, onClick }: Prop
           Draft {player.player.name}
         </button>
       )}
-    </button>
+    </div>
   )
 }
