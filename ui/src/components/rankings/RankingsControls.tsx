@@ -20,7 +20,7 @@ const DRAFT_TYPES = [
 
 function SegmentedControl<T extends string>({
   options, value, onChange,
-}: { options: Array<{ value: T; label: string }>; value: T; onChange: (v: T) => void }) {
+}: { options: ReadonlyArray<{ readonly value: T; readonly label: string }>; value: T; onChange: (v: T) => void }) {
   return (
     <div className="flex rounded-lg overflow-hidden border border-border bg-bg-secondary">
       {options.map((o) => (

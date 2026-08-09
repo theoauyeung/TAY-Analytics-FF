@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { Settings2 } from 'lucide-react'
-import clsx from 'clsx'
 import type { ColumnKey } from '../../types'
 import { OPTIONAL_COLUMNS, COLUMN_LABELS } from '../../types'
 
