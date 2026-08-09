@@ -59,7 +59,7 @@ export function RecommendationPanel() {
       <div className="bg-bg-card border border-border rounded-2xl p-5">
         <div className="flex items-start gap-4 mb-4">
           {/* Headshot */}
-          <div className="w-16 h-16 rounded-full overflow-hidden bg-bg-elevated flex-shrink-0">
+          <div className="w-12 h-12 rounded-full overflow-hidden bg-bg-elevated flex-shrink-0">
             {displayed.player.imageUrl ? (
               <img
                 src={displayed.player.imageUrl}
@@ -160,11 +160,10 @@ export function RecommendationPanel() {
             Alternatives
           </div>
           <div className="space-y-2">
-            {reco.alternatives.map((alt, i) => (
+            {reco.alternatives.slice(0, 5).map((alt, i) => (
               <AlternativeCard
                 key={alt.player.id}
-                alt={alt}
-                rank={i + 1}
+                player={{ player: alt.player, score: alt.draftScore / 100, explanation: alt.explanation }}
                 isSelected={selectedAltIdx === i}
                 onClick={() => setSelectedAltIdx(selectedAltIdx === i ? null : i)}
               />

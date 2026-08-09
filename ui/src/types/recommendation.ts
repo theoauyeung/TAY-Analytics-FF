@@ -1,4 +1,4 @@
-import type { Position } from './player'
+import type { Position, PlayerDetail } from './player'
 import type { Ranking } from './ranking'
 
 export interface FutureAvailability {
@@ -18,6 +18,12 @@ export interface RecommendationExplanation {
   factor: string
   detail: string
   weight: 'primary' | 'secondary' | 'risk'
+}
+
+export interface ScoredPlayer {
+  player: PlayerDetail
+  score: number                        // 0–1 composite draft score
+  explanation: RecommendationExplanation[]
 }
 
 export interface RecommendationState {
