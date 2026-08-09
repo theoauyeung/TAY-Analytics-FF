@@ -48,7 +48,7 @@ export function DraftContextBar() {
         {isDraftComplete
           ? 'DRAFT COMPLETE'
           : isUserTurn
-            ? 'YOUR PICK'
+            ? 'YOUR PICK NOW'
             : `YOUR PICK IN ${picksUntil}`
         }
       </div>
