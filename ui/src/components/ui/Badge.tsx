@@ -3,7 +3,6 @@ import type { Position } from '../../types'
 
 type PositionBadgeProps = { position: Position }
 type SignalBadgeProps = { signal: 'value' | 'avoid' | 'breakout' | 'injury' | 'confidence'; label: string }
-type BadgeProps = PositionBadgeProps | SignalBadgeProps
 
 const POS_STYLES: Record<Position, string> = {
   QB:  'bg-pos-qb/20 text-pos-qb',

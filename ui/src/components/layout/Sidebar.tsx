@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, BarChart3, Users, Trophy,
-  ClipboardList, PieChart, Settings, Zap,
+  PieChart, Settings, Zap,
 } from 'lucide-react'
 import clsx from 'clsx'
 

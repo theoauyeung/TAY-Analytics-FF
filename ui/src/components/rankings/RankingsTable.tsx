@@ -51,7 +51,7 @@ export function RankingsTable({ rankings, visibleColumns, onPlayerClick, isLoadi
           </tr>
         </thead>
         <tbody className="bg-bg-card">
-          {rows.map((row, i) =>
+          {rows.map((row) =>
             row.type === 'tier' ? (
               <TierSeparator key={`tier-${row.tier.number}`} tier={row.tier} />
             ) : (
