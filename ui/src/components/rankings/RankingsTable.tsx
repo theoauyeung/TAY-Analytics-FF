@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import type { Ranking, ColumnKey } from '../../types'
-import { CORE_COLUMNS, COLUMN_LABELS } from '../../types'
+import { COLUMN_LABELS } from '../../types'
 import { PlayerRow } from './PlayerRow'
 import { TierSeparator } from './TierSeparator'
 import { Spinner } from '../ui/Spinner'
@@ -27,9 +27,6 @@ export function RankingsTable({ rankings, visibleColumns, onPlayerClick, isLoadi
     return result
   }, [rankings])
 
-  const allColumns = [...CORE_COLUMNS.filter((c) => c !== 'rank' && c !== 'player'), ...visibleColumns.filter((c) => !CORE_COLUMNS.includes(c))]
-
-  void allColumns
 
   if (isLoading) {
     return (

@@ -27,8 +27,6 @@ export function PlayerRow({ ranking, visibleColumns, onClick, isDrafted = false 
   const isOvervalued  = adpDelta <= -5
   const hasInjury     = player.injuryStatus !== null && player.injuryStatus !== 'healthy'
 
-  void isOvervalued
-
   return (
     <tr
       onClick={onClick}
@@ -66,6 +64,7 @@ export function PlayerRow({ ranking, visibleColumns, onClick, isDrafted = false 
             <div className="font-semibold text-sm text-text-primary leading-tight flex items-center gap-1.5">
               {player.name}
               {isUndervalued && <SignalBadge signal="value" label="Value" />}
+              {isOvervalued && <SignalBadge signal="avoid" label="Overvalued" />}
               {hasInjury && <SignalBadge signal="injury" label={player.injuryStatus ?? ''} />}
             </div>
             <div className="text-xs text-text-muted">
