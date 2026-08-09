@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { Search } from 'lucide-react'
 import clsx from 'clsx'
-import type { Position } from '../../types'
+import type { Position, PlayerDetail } from '../../types'
 import { MOCK_RANKINGS } from '../../data'
 import { useDraftState } from '../../hooks/useDraftState'
 import { PositionBadge } from '../ui/Badge'
@@ -43,10 +43,18 @@ export function AvailablePlayers() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [])
 
-  function handleDraft(playerId: string) {
-    const ranking = MOCK_RANKINGS.find(r => r.player.id === playerId)
-    if (!ranking) return
-    draftPlayer(ranking.player)
+  // Dismiss pending on click outside
+  useEffect(() => {
+    if (!pendingId) return
+    function onMouseDown() {
+      setPendingId(null)
+    }
+    document.addEventListener('mousedown', onMouseDown)
+    return () => document.removeEventListener('mousedown', onMouseDown)
+  }, [pendingId])
+
+  function handleDraft(player: PlayerDetail, isUserPick: boolean) {
+    draftPlayer(player, isUserPick)
     setPendingId(null)
   }
 
@@ -170,14 +178,17 @@ export function AvailablePlayers() {
 
               {/* Inline draft confirmation */}
               {isPending && (
-                <div className="flex items-center gap-2 px-3 py-2 bg-accent/10 border-b border-accent/30">
+                <div
+                  onMouseDown={e => e.stopPropagation()}
+                  className="flex items-center gap-2 px-3 py-2 bg-accent/10 border-b border-accent/30"
+                >
                   <span className="text-xs text-text-secondary flex-1 truncate">
                     Draft {ranking.player.name}?
                   </span>
                   <button
                     onClick={e => {
                       e.stopPropagation()
-                      handleDraft(ranking.player.id)
+                      handleDraft(ranking.player, true)
                     }}
                     className="px-2.5 py-1 text-xs font-bold bg-accent text-bg-primary rounded-lg hover:opacity-90 transition-opacity"
                   >
@@ -186,7 +197,7 @@ export function AvailablePlayers() {
                   <button
                     onClick={e => {
                       e.stopPropagation()
-                      handleDraft(ranking.player.id)
+                      handleDraft(ranking.player, false)
                     }}
                     className="px-2.5 py-1 text-xs font-medium border border-border text-text-secondary rounded-lg hover:text-text-primary hover:border-accent transition-colors"
                   >
