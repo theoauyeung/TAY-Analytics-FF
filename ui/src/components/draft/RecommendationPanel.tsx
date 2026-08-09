@@ -5,6 +5,8 @@ import { useDraftState } from '../../hooks/useDraftState'
 import { useMockRecommendation } from '../../hooks/useMockRecommendation'
 import { PositionBadge } from '../ui/Badge'
 import { AlternativeCard } from './AlternativeCard'
+import { ScarcityBar } from './ScarcityBar'
+import { MayNotMakeItBack } from './MayNotMakeItBack'
 
 export function RecommendationPanel() {
   const { state, draftPlayer } = useDraftState()
@@ -169,6 +171,20 @@ export function RecommendationPanel() {
               />
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Scarcity Bar */}
+      {reco.scarcity.length > 0 && (
+        <div>
+          <ScarcityBar scarcity={reco.scarcity} />
+        </div>
+      )}
+
+      {/* May Not Make It Back */}
+      {reco.mayNotMakeItBack.length > 0 && (
+        <div>
+          <MayNotMakeItBack items={reco.mayNotMakeItBack} allRankings={[]} />
         </div>
       )}
     </div>
