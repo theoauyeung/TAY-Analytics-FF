@@ -18,7 +18,7 @@ export function useDraftState() {
 
   const draftPlayer = useCallback(
     (player: PlayerDetail) => {
-      dispatch({ type: 'DRAFT_PLAYER', player, isUserPick: true })
+      dispatch({ type: 'DRAFT_PLAYER', payload: player })
     },
     [dispatch]
   )

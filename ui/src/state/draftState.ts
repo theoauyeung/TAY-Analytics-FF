@@ -33,7 +33,7 @@ export function picksUntilNextTurn(state: LiveDraftState): number {
 // ─── Reducer ──────────────────────────────────────────────────────────────
 
 export type DraftAction =
-  | { type: 'DRAFT_PLAYER'; player: import('../types').PlayerDetail; isUserPick: boolean }
+  | { type: 'DRAFT_PLAYER'; payload: import('../types').PlayerDetail }
   | { type: 'UNDO_LAST_PICK' }
   | { type: 'RESET_DRAFT' }
   | { type: 'UPDATE_CONFIG'; config: DraftConfig }
@@ -44,17 +44,19 @@ export function draftReducer(state: LiveDraftState, action: DraftAction): LiveDr
       const { currentOverallPick, config } = state
       const round = Math.ceil(currentOverallPick / config.teams)
       const pickInRound = ((currentOverallPick - 1) % config.teams) + 1
-      const teamNumber = action.isUserPick
+      const userPickNumbers = computeUserPickNumbers(config)
+      const isUserPick = userPickNumbers.includes(currentOverallPick)
+      const teamNumber = isUserPick
         ? config.userPickPosition
         : getPickingTeam(currentOverallPick, config.teams)
 
       const pick: DraftedPick = {
-        player: action.player,
+        player: action.payload,
         overallPick: currentOverallPick,
         round,
         pickInRound,
         teamNumber,
-        isUserPick: action.isUserPick,
+        isUserPick,
       }
       return {
         ...state,
