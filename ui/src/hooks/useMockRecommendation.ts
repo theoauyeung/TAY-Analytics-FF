@@ -6,6 +6,7 @@ import type {
 } from '../types'
 import { MOCK_RANKINGS } from '../data'
 import { computeUserPickNumbers } from '../state'
+import { useDraftState } from './useDraftState'
 
 function clamp(v: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, v))
@@ -125,7 +126,10 @@ function buildExplanation(
 }
 
 export function useMockRecommendation(state: LiveDraftState): RecommendationState | null {
+  const { isUserTurn } = useDraftState()
   return useMemo(() => {
+    if (!isUserTurn) return null
+
     const draftedIds = new Set(state.picks.map(p => p.player.id))
     const available = MOCK_RANKINGS.filter(r => !draftedIds.has(r.player.id))
 
@@ -233,10 +237,10 @@ export function useMockRecommendation(state: LiveDraftState): RecommendationStat
 
     return {
       topPick: toItem(top),
-      alternatives: rest.slice(0, 4).map(toItem),
+      alternatives: rest.slice(0, 5).map(toItem),
       positionalNeeds,
       scarcity,
       mayNotMakeItBack,
     }
-  }, [state])
+  }, [state, isUserTurn])
 }
