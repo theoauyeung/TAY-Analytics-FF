@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { X, TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { X } from 'lucide-react'
 import clsx from 'clsx'
 import { usePlayer } from '../../hooks/usePlayer'
 import { PositionBadge } from '../ui/Badge'
