@@ -36,14 +36,11 @@ def compute_adp_delta(
 
 
 def run_valuation(
+    conn: duckdb.DuckDBPyConnection,
     season: int = 2026,
     model_version: str = 'neural-v1',
-    gap_threshold: float = 15.0,
     config: ReplacementConfig | None = None,
-    db_path=None,
-) -> None:
-    conn = get_conn(db_path) if db_path else get_conn()
-    init_schema(conn)
+) -> dict:
     if config is None:
         config = ReplacementConfig()
 
@@ -55,16 +52,16 @@ def run_valuation(
         print(f'  {pos} replacement: {lvl:.1f} PPR pts')
 
     print('Step 2/4: Computing VOR...')
-    n = compute_vor(conn, season, model_version, levels)
-    print(f'  {n} players updated with VOR')
+    vor_rows = compute_vor(conn, season, model_version, levels)
+    print(f'  {vor_rows} players updated with VOR')
 
     print('Step 3/4: Assigning tiers...')
-    n = assign_tiers(conn, season, model_version, gap_threshold=gap_threshold)
-    print(f'  {n} players assigned tiers')
+    tier_rows = assign_tiers(conn, season, model_version, gap_threshold=15.0)
+    print(f'  {tier_rows} players assigned tiers')
 
     print('Step 4/4: Computing ADP delta...')
-    n = compute_adp_delta(conn, season, model_version)
-    print(f'  {n} players updated with ADP delta')
+    adp_delta_rows = compute_adp_delta(conn, season, model_version)
+    print(f'  {adp_delta_rows} players updated with ADP delta')
 
     # Summary
     summary = conn.execute("""
@@ -83,4 +80,11 @@ def run_valuation(
     for row in summary:
         print(f'  {row[0]}: n={row[1]}, max_vor={row[2]}, tiered={row[3]}, adp_delta={row[4]}')
 
-    conn.close()
+    return {
+        'season': season,
+        'model_version': model_version,
+        'replacement_levels': levels,
+        'vor_rows': vor_rows,
+        'tier_rows': tier_rows,
+        'adp_delta_rows': adp_delta_rows,
+    }
