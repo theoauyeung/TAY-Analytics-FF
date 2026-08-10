@@ -1,6 +1,5 @@
 # tests/valuation/test_tiers.py
 import duckdb
-import pytest
 from tay.valuation.tiers import assign_tiers
 
 
@@ -76,4 +75,20 @@ def test_returns_row_count():
     conn = _make_conn(data)
     n = assign_tiers(conn, 2026, 'v1', gap_threshold=15.0)
     assert n == 2
+    conn.close()
+
+
+def test_default_gap_threshold():
+    # Verify default gap_threshold=15.0 works without explicit parameter
+    data = [('wr1','WR',100.0), ('wr2','WR',95.0), ('wr3','WR',60.0)]
+    conn = _make_conn(data)
+    # Call without gap_threshold to test default
+    assign_tiers(conn, 2026, 'v1')
+    # With default 15.0: 100→95 is 5 (same tier), 95→60 is 35 (new tier)
+    row_wr1 = conn.execute("SELECT tier FROM projections WHERE gsis_id='wr1'").fetchone()[0]
+    row_wr2 = conn.execute("SELECT tier FROM projections WHERE gsis_id='wr2'").fetchone()[0]
+    row_wr3 = conn.execute("SELECT tier FROM projections WHERE gsis_id='wr3'").fetchone()[0]
+    assert row_wr1 == 1
+    assert row_wr2 == 1
+    assert row_wr3 == 2
     conn.close()

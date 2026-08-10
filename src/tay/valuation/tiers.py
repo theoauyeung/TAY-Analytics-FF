@@ -36,5 +36,4 @@ def assign_tiers(
             """, [tier, gsis_id, season, model_version])
             total += 1
 
-    conn.commit()
     return total
