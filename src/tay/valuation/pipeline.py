@@ -2,7 +2,6 @@
 from __future__ import annotations
 import duckdb
 
-from tay.db import get_conn, init_schema
 from tay.valuation.replacement import ReplacementConfig, compute_replacement_levels
 from tay.valuation.vor import compute_vor
 from tay.valuation.tiers import assign_tiers
