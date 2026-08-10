@@ -12,17 +12,17 @@ interface Props {
 
 export function RosterBuilder({ roster, onAdd, onRemove }: Props) {
   const [search, setSearch] = useState('')
-  const rosterIds = new Set(roster.map(p => p.id))
 
   const suggestions = useMemo(() => {
     if (!search.trim()) return []
+    const rosterIds = new Set(roster.map(p => p.id))
     const q = search.toLowerCase()
     return MOCK_RANKINGS
       .filter(r => !rosterIds.has(r.player.id) &&
         (r.player.name.toLowerCase().includes(q) || r.player.team.toLowerCase().includes(q))
       )
       .slice(0, 8)
-  }, [search, rosterIds])
+  }, [search, roster])
 
   return (
     <div className="flex flex-col gap-3">

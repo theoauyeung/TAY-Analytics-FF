@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { MOCK_RANKINGS } from '../data'
 import type { PlayerDetail } from '../types'
 import { useDraftState } from '../hooks/useDraftState'
@@ -38,9 +38,8 @@ export function useAutoAdvance() {
     return () => clearTimeout(timer)
   }, [autoAdvancing, isUserTurn, isDraftComplete, state.picks, draftPlayer])
 
-  return {
-    autoAdvancing,
-    startAutoAdvance: () => setAutoAdvancing(true),
-    stopAutoAdvance: () => setAutoAdvancing(false),
-  }
+  const startAutoAdvance = useCallback(() => setAutoAdvancing(true), [])
+  const stopAutoAdvance = useCallback(() => setAutoAdvancing(false), [])
+
+  return { autoAdvancing, startAutoAdvance, stopAutoAdvance }
 }
