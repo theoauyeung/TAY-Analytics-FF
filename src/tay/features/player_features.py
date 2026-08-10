@@ -8,6 +8,10 @@ from tay.db import get_conn, init_schema
 SKILL_POSITIONS = ("'QB'", "'RB'", "'WR'", "'TE'")
 SKILL_POS_SQL = f"({', '.join(SKILL_POSITIONS)})"
 
+_W1 = 0.6
+_W2 = 0.3
+_W3 = 0.1
+
 _LAG_COLUMNS = [
     ('lag2_fantasy_ppr', 'DOUBLE'),
     ('lag2_targets',     'INTEGER'),
@@ -65,6 +69,7 @@ def build_player_features(
     for season in target_seasons:
         prior = season - 1
         prior2 = season - 2
+        prior3 = season - 3
         conn.execute("DELETE FROM player_features WHERE season = ?", [season])
 
         # Get all skill-position players who have prior season stats
@@ -92,11 +97,17 @@ def build_player_features(
              carries, rush_yards, rush_tds, attempts, comps, pass_yards,
              pass_tds, ints, fpts, epa, cpoe, team) = s1
 
-            # Two-seasons-ago (N-2) stats for rolling average
+            # Two-seasons-ago (N-2) stats for rolling average and lag features
             s2 = conn.execute("""
-                SELECT fantasy_points_ppr, targets, carries
+                SELECT fantasy_points_ppr, targets, carries, pass_yards
                 FROM player_season_stats WHERE gsis_id = ? AND season = ?
             """, [gsis_id, prior2]).fetchone()
+
+            # Three-seasons-ago (N-3) stats for lag features
+            s3 = conn.execute("""
+                SELECT fantasy_points_ppr, targets, carries, pass_yards
+                FROM player_season_stats WHERE gsis_id = ? AND season = ?
+            """, [gsis_id, prior3]).fetchone()
 
             # Target: season N actual
             target_row = conn.execute("""
@@ -130,6 +141,24 @@ def build_player_features(
                 roll2_fpts = float(fpts or 0)
                 roll2_targets = float(t)
                 roll2_carries = float(c)
+
+            # Lag-2 raw values (N-2); None when season doesn't exist
+            lag2_fpts  = float(s2[0] or 0) if s2 else None
+            lag2_tgts  = int(s2[1] or 0)   if s2 else None
+            lag2_cars  = int(s2[2] or 0)   if s2 else None
+            lag2_pyds  = float(s2[3] or 0) if s2 else None
+
+            # Lag-3 raw values (N-3); None when season doesn't exist
+            lag3_fpts  = float(s3[0] or 0) if s3 else None
+            lag3_tgts  = int(s3[1] or 0)   if s3 else None
+            lag3_cars  = int(s3[2] or 0)   if s3 else None
+            lag3_pyds  = float(s3[3] or 0) if s3 else None
+
+            # EWMA (use 0 for missing seasons so signal degrades gracefully)
+            ewma_fpts  = _W1 * (fpts or 0) + _W2 * (lag2_fpts or 0) + _W3 * (lag3_fpts or 0)
+            ewma_tgts  = _W1 * t            + _W2 * (lag2_tgts or 0) + _W3 * (lag3_tgts or 0)
+            ewma_cars  = _W1 * c            + _W2 * (lag2_cars or 0) + _W3 * (lag3_cars or 0)
+            ewma_pyds  = _W1 * (pass_yards or 0) + _W2 * (lag2_pyds or 0) + _W3 * (lag3_pyds or 0)
 
             # Team environment (use season N team features — the prior-year env for next season)
             tf = conn.execute("""
@@ -187,6 +216,9 @@ def build_player_features(
                     td_rate_receiving, td_rate_rushing,
                     prev_epa_per_play, prev_cpoe,
                     roll2_fantasy_ppr, roll2_targets, roll2_carries,
+                    lag2_fantasy_ppr, lag2_targets, lag2_carries, lag2_pass_yards,
+                    lag3_fantasy_ppr, lag3_targets, lag3_carries, lag3_pass_yards,
+                    ewma_fantasy_ppr, ewma_targets, ewma_carries, ewma_pass_yards,
                     team, team_pass_rate, team_pass_epa, team_total_plays,
                     depth_chart_pos, is_rookie, draft_round, draft_pick, draft_pick_value,
                     combine_forty, combine_vertical,
@@ -202,7 +234,10 @@ def build_player_features(
                     ?, ?, ?, ?, ?,
                     ?, ?, ?, ?, ?,
                     ?, ?, ?, ?, ?,
-                    ?, ?, ?, ?
+                    ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?,
+                    ?, ?
                 )
             """, [
                 gsis_id, season, position, age, experience,
@@ -216,6 +251,9 @@ def build_player_features(
                 comp_pct, ypa, td_rate_rec, td_rate_rush,
                 epa, cpoe,
                 roll2_fpts, roll2_targets, roll2_carries,
+                lag2_fpts, lag2_tgts, lag2_cars, lag2_pyds,
+                lag3_fpts, lag3_tgts, lag3_cars, lag3_pyds,
+                ewma_fpts, ewma_tgts, ewma_cars, ewma_pyds,
                 team, team_pass_rate, team_pass_epa, team_plays,
                 depth, is_rookie, draft_round, draft_pick, pick_value,
                 forty, vertical,
