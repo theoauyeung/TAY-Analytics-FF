@@ -1,8 +1,26 @@
+import { DraftProvider } from '../state'
+import { DraftContextBar } from '../components/draft/DraftContextBar'
+import { AvailablePlayers } from '../components/draft/AvailablePlayers'
+import { RecommendationPanel } from '../components/draft/RecommendationPanel'
+import { MyRoster } from '../components/draft/MyRoster'
+
+function DraftAssistantInner() {
+  return (
+    <div className="h-screen flex flex-col overflow-hidden">
+      <DraftContextBar />
+      <div className="flex flex-1 overflow-hidden">
+        <AvailablePlayers />
+        <RecommendationPanel />
+        <MyRoster />
+      </div>
+    </div>
+  )
+}
+
 export default function DraftAssistant() {
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold text-text-primary">Draft Assistant</h1>
-      <p className="mt-2 text-text-secondary">Coming in Plan C.</p>
-    </div>
+    <DraftProvider>
+      <DraftAssistantInner />
+    </DraftProvider>
   )
 }
