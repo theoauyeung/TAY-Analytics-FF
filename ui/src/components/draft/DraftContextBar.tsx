@@ -1,10 +1,9 @@
 import { RotateCcw, Undo2, Users } from 'lucide-react'
 import clsx from 'clsx'
 import { useDraftState } from '../../hooks/useDraftState'
-import { MOCK_RANKINGS } from '../../data'
 
 export function DraftContextBar() {
-  const { state, undoLastPick, resetDraft, isUserTurn, picksUntil } = useDraftState()
+  const { state, undoLastPick, resetDraft, isUserTurn, picksUntil, availablePlayers } = useDraftState()
 
   const { currentOverallPick, config, picks } = state
   const { teams, totalRounds } = config
@@ -14,7 +13,7 @@ export function DraftContextBar() {
 
   const totalPicks = teams * totalRounds
   const draftedCount = picks.length
-  const remainingCount = MOCK_RANKINGS.length - draftedCount
+  const remainingCount = availablePlayers.length
   const isDraftComplete = currentOverallPick > totalPicks
 
   return (

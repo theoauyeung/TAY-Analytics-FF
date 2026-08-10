@@ -45,7 +45,7 @@ export function AlternativeCard({ player, onDraftMe, isSelected, onClick }: Prop
         <PositionBadge position={player.player.position} />
       </div>
 
-      <div className="h-1 bg-bg-elevated rounded-full mt-1">
+      <div className="h-1 bg-border rounded-full mt-1">
         <div
           className="h-1 bg-accent rounded-full"
           style={{ width: `${Math.round(player.score * 100)}%` }}

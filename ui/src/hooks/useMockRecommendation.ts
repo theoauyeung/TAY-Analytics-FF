@@ -6,7 +6,6 @@ import type {
 } from '../types'
 import { MOCK_RANKINGS } from '../data'
 import { computeUserPickNumbers } from '../state'
-import { useDraftState } from './useDraftState'
 
 function clamp(v: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, v))
@@ -62,7 +61,7 @@ function buildExplanation(
   if (components.vor > 50) {
     result.push({
       factor: 'Strong Model Value',
-      detail: `${ranking.projection.toFixed(0)} projected pts · VOR +${ranking.vor.toFixed(1)} · Model rank #${ranking.modelRank}`,
+      detail: `${ranking.projection.toFixed(0)} projected pts · VOR ${ranking.vor >= 0 ? '+' : ''}${ranking.vor.toFixed(1)} · Model rank #${ranking.modelRank}`,
       weight: 'primary',
     })
   }
@@ -126,10 +125,7 @@ function buildExplanation(
 }
 
 export function useMockRecommendation(state: LiveDraftState): RecommendationState | null {
-  const { isUserTurn } = useDraftState()
   return useMemo(() => {
-    if (!isUserTurn) return null
-
     const draftedIds = new Set(state.picks.map(p => p.player.id))
     const available = MOCK_RANKINGS.filter(r => !draftedIds.has(r.player.id))
 
@@ -242,5 +238,5 @@ export function useMockRecommendation(state: LiveDraftState): RecommendationStat
       scarcity,
       mayNotMakeItBack,
     }
-  }, [state, isUserTurn])
+  }, [state])
 }
