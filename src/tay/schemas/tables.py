@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS play_by_play (
     cpoe            DOUBLE,
     wpa             DOUBLE,
     created_at      TIMESTAMP DEFAULT current_timestamp,
-    PRIMARY KEY (play_id, season)
+    PRIMARY KEY (game_id, play_id)
 )
 """
 
