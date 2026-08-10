@@ -1,7 +1,7 @@
 PYTHON := /Users/theoauyeung/miniforge3/bin/python3.12
 RSCRIPT := $(shell which Rscript)
 
-.PHONY: install ingest features test clean
+.PHONY: install ingest features train test clean
 
 install:
 	$(PYTHON) -m pip install -e ".[dev]"
@@ -11,6 +11,9 @@ ingest:
 
 features:
 	$(PYTHON) scripts/build_features.py
+
+train:
+	$(PYTHON) scripts/train_models.py
 
 test:
 	$(PYTHON) -m pytest tests/ -v
