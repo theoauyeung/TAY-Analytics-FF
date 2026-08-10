@@ -1,0 +1,10 @@
+pyproject.toml
+src/tay/__init__.py
+src/tay.egg-info/PKG-INFO
+src/tay.egg-info/SOURCES.txt
+src/tay.egg-info/dependency_links.txt
+src/tay.egg-info/requires.txt
+src/tay.egg-info/top_level.txt
+src/tay/ingestion/__init__.py
+src/tay/schemas/__init__.py
+tests/test_import.py
