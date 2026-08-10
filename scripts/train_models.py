@@ -2,9 +2,9 @@
 """Train position-specific neural network projection models.
 
 Usage:
-    python scripts/train_models.py [--epochs 200] [--train-end 2022]
-                                   [--val-start 2023] [--val-end 2025]
-                                   [--projection-season 2025]
+    python scripts/train_models.py [--epochs 200] [--train-end 2023]
+                                   [--val-start 2024] [--val-end 2025]
+                                   [--projection-season 2026]
                                    [--models-dir models]
 """
 import argparse
@@ -19,10 +19,10 @@ from tay.models.pipeline import run_training_pipeline
 def main():
     p = argparse.ArgumentParser(description='TAY Analytics FF — train projection models')
     p.add_argument('--epochs',             type=int, default=200)
-    p.add_argument('--train-end',          type=int, default=2022)
-    p.add_argument('--val-start',          type=int, default=2023)
+    p.add_argument('--train-end',          type=int, default=2023)
+    p.add_argument('--val-start',          type=int, default=2024)
     p.add_argument('--val-end',            type=int, default=2025)
-    p.add_argument('--projection-season',  type=int, default=2025)
+    p.add_argument('--projection-season',  type=int, default=2026)
     p.add_argument('--models-dir',         default='models')
     args = p.parse_args()
 

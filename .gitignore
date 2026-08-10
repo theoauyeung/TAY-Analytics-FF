@@ -8,4 +8,4 @@ __pycache__/
 *.egg-info/
 dist/
 .env
-models/
+/models/

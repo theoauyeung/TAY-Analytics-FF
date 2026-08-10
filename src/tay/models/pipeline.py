@@ -26,8 +26,8 @@ def _mc_predict(model: PositionMLP, X: torch.Tensor) -> np.ndarray:
 def train_all_positions(
     conn,
     epochs: int = 200,
-    train_end: int = 2022,
-    val_start: int = 2023,
+    train_end: int = 2023,
+    val_start: int = 2024,
     val_end: int = 2025,
     models_dir: str | Path = 'models',
 ) -> dict[str, float]:
@@ -57,7 +57,7 @@ def train_all_positions(
 def write_projections(
     conn,
     models_dir: str | Path = 'models',
-    projection_season: int = 2025,
+    projection_season: int = 2026,
 ) -> int:
     """Load trained checkpoints, run MC Dropout inference, upsert to projections table."""
     models_dir = Path(models_dir)
@@ -118,10 +118,10 @@ def write_projections(
 
 def run_training_pipeline(
     epochs: int = 200,
-    train_end: int = 2022,
-    val_start: int = 2023,
+    train_end: int = 2023,
+    val_start: int = 2024,
     val_end: int = 2025,
-    projection_season: int = 2025,
+    projection_season: int = 2026,
     models_dir: str | Path = 'models',
     db_path=None,
 ) -> None:
