@@ -46,9 +46,10 @@ function fillSlots(
 }
 
 function strengthLabel(count: number, needed: number): { label: string; color: string } {
-  if (count === 0) return { label: 'Empty', color: 'text-text-muted' }
+  if (count === 0) return { label: 'Weak', color: 'text-yellow-400' }
+  if (count >= needed + 2) return { label: 'Elite', color: 'text-green-400' }
   if (count >= needed + 1) return { label: 'Strong', color: 'text-green-400' }
-  if (count >= needed) return { label: 'OK', color: 'text-text-secondary' }
+  if (count >= needed) return { label: 'Average', color: 'text-text-secondary' }
   return { label: 'Weak', color: 'text-yellow-400' }
 }
 
@@ -81,7 +82,7 @@ export function MyRoster() {
         const need = (reco.positionalNeeds as Record<string, number>)[pos] ?? 0
         const bestNeed = (reco.positionalNeeds as Record<string, number>)[best] ?? 0
         return need > bestNeed ? pos : best
-      }, 'RB' as Position)
+      }, POSITIONS[0])
     : null
 
   return (
@@ -132,7 +133,7 @@ export function MyRoster() {
                 <PositionBadge position={player.position} />
               </>
             ) : (
-              <span className="text-xs text-text-muted italic">Empty</span>
+              <span className="text-xs text-text-muted italic">Available</span>
             )}
           </div>
         ))}
