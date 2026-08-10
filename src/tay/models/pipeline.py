@@ -9,7 +9,6 @@ from tay.db import get_conn, init_schema
 from tay.models.dataset import load_position_data
 from tay.models.network import PositionMLP, save_checkpoint, load_checkpoint
 from tay.models.trainer import train_model
-from tay.models.features import POSITION_FEATURES
 
 POSITIONS = ['QB', 'RB', 'WR', 'TE']
 MODEL_VERSION = 'neural-v1'
