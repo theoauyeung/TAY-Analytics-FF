@@ -8,3 +8,4 @@ export {
   getPickingTeam,
 } from './draftState'
 export type { DraftAction } from './draftState'
+export { bestAvailablePlayer, useAutoAdvance } from './mockDraftSimulator'
