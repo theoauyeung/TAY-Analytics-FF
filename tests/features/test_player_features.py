@@ -1,4 +1,5 @@
 import pytest
+import duckdb
 from tay.db import get_conn, init_schema
 from tay.features.player_features import build_player_features
 
@@ -87,3 +88,40 @@ def test_skill_positions_only(conn):
         "SELECT gsis_id FROM player_features WHERE gsis_id='k-1'"
     ).fetchone()
     assert row is None
+
+def test_player_features_has_lag_columns():
+    """Verify all 12 new lag/EWMA columns exist in the schema."""
+    conn = duckdb.connect(':memory:')
+    init_schema(conn)
+    cols = {row[0] for row in conn.execute(
+        "SELECT column_name FROM information_schema.columns WHERE table_name = 'player_features'"
+    ).fetchall()}
+    expected = {
+        'lag2_fantasy_ppr', 'lag2_targets', 'lag2_carries', 'lag2_pass_yards',
+        'lag3_fantasy_ppr', 'lag3_targets', 'lag3_carries', 'lag3_pass_yards',
+        'ewma_fantasy_ppr', 'ewma_targets', 'ewma_carries', 'ewma_pass_yards',
+    }
+    assert expected.issubset(cols), f"Missing columns: {expected - cols}"
+    conn.close()
+
+def test_migrate_adds_missing_columns():
+    """Simulate an old DB that lacks the new columns, then migrate."""
+    conn = duckdb.connect(':memory:')
+    # Create table without new columns (old schema)
+    conn.execute("""
+        CREATE TABLE player_features (
+            gsis_id VARCHAR NOT NULL,
+            season INTEGER NOT NULL,
+            prev_fantasy_ppr DOUBLE,
+            PRIMARY KEY (gsis_id, season)
+        )
+    """)
+    # Migration must not error and must add the columns
+    from tay.features.player_features import _migrate_player_features
+    _migrate_player_features(conn)
+    cols = {row[0] for row in conn.execute(
+        "SELECT column_name FROM information_schema.columns WHERE table_name = 'player_features'"
+    ).fetchall()}
+    assert 'lag2_fantasy_ppr' in cols
+    assert 'ewma_fantasy_ppr' in cols
+    conn.close()

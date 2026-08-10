@@ -8,6 +8,29 @@ from tay.db import get_conn, init_schema
 SKILL_POSITIONS = ("'QB'", "'RB'", "'WR'", "'TE'")
 SKILL_POS_SQL = f"({', '.join(SKILL_POSITIONS)})"
 
+_LAG_COLUMNS = [
+    ('lag2_fantasy_ppr', 'DOUBLE'),
+    ('lag2_targets',     'INTEGER'),
+    ('lag2_carries',     'INTEGER'),
+    ('lag2_pass_yards',  'DOUBLE'),
+    ('lag3_fantasy_ppr', 'DOUBLE'),
+    ('lag3_targets',     'INTEGER'),
+    ('lag3_carries',     'INTEGER'),
+    ('lag3_pass_yards',  'DOUBLE'),
+    ('ewma_fantasy_ppr', 'DOUBLE'),
+    ('ewma_targets',     'DOUBLE'),
+    ('ewma_carries',     'DOUBLE'),
+    ('ewma_pass_yards',  'DOUBLE'),
+]
+
+
+def _migrate_player_features(conn: duckdb.DuckDBPyConnection) -> None:
+    """Add new lag/EWMA columns to an existing player_features table."""
+    for col, dtype in _LAG_COLUMNS:
+        conn.execute(
+            f'ALTER TABLE player_features ADD COLUMN IF NOT EXISTS {col} {dtype}'
+        )
+
 
 def _draft_pick_value(overall_pick: int | None) -> float:
     """Non-linear pick value: 1/sqrt(pick). 0 for undrafted."""
@@ -37,6 +60,7 @@ def build_player_features(
     For season N: uses N-1 as lag, N-2 and N-1 for rolling avg, N as target.
     Returns total number of rows inserted.
     """
+    _migrate_player_features(conn)
     total = 0
     for season in target_seasons:
         prior = season - 1

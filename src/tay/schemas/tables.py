@@ -264,6 +264,24 @@ CREATE TABLE IF NOT EXISTS player_features (
     roll2_targets           DOUBLE,
     roll2_carries           DOUBLE,
 
+    -- Season N-2 raw stats
+    lag2_fantasy_ppr        DOUBLE,
+    lag2_targets            DOUBLE,
+    lag2_carries            DOUBLE,
+    lag2_pass_yards         DOUBLE,
+
+    -- Season N-3 raw stats
+    lag3_fantasy_ppr        DOUBLE,
+    lag3_targets            DOUBLE,
+    lag3_carries            DOUBLE,
+    lag3_pass_yards         DOUBLE,
+
+    -- EWMA (0.6 × N-1  +  0.3 × N-2  +  0.1 × N-3)
+    ewma_fantasy_ppr        DOUBLE,
+    ewma_targets            DOUBLE,
+    ewma_carries            DOUBLE,
+    ewma_pass_yards         DOUBLE,
+
     -- Team context (season N-1 team environment)
     team                    VARCHAR,
     team_pass_rate          DOUBLE,
