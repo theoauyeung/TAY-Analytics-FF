@@ -12,6 +12,10 @@ def compute_adp_delta(
     season: int,
     model_version: str,
 ) -> int:
+    # Two sentinel values appear in the adp table for effectively-undrafted players:
+    #   9999999 — generic "not drafted" sentinel
+    #   999     — Sleeper's search_rank placeholder for unranked players (483 rows)
+    # Exclude both so adp_delta reflects only real consensus draft-position data.
     rows = conn.execute("""
         SELECT pr.gsis_id, pr.vor_rank, a.adp
         FROM projections pr
@@ -19,7 +23,9 @@ def compute_adp_delta(
                    AND a.season = pr.season
                    AND a.format = 'ppr'
         WHERE pr.season = ? AND pr.model_version = ?
-          AND pr.vor_rank IS NOT NULL AND a.adp IS NOT NULL
+          AND pr.vor_rank IS NOT NULL
+          AND a.adp IS NOT NULL
+          AND a.adp NOT IN (999, 9999999)
     """, [season, model_version]).fetchall()
 
     updated = 0
