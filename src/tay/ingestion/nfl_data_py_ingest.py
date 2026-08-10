@@ -67,11 +67,20 @@ def ingest_players(conn: duckdb.DuckDBPyConnection) -> int:
 def ingest_rosters(conn: duckdb.DuckDBPyConnection, seasons: list[int]) -> int:
     """Load weekly roster data into the rosters table.
 
-    Uses import_weekly_rosters() which returns one row per player per week.
-    Columns: player_id -> gsis_id, depth_chart_position -> depth_chart_pos.
+    Fetches one season at a time to avoid a pandas duplicate-label bug in
+    import_weekly_rosters() when called with many seasons at once.
     """
     print(f"Fetching weekly rosters for {len(seasons)} season(s)...")
-    df = nfl.import_weekly_rosters(years=seasons)
+    import pandas as pd
+    frames = []
+    for season in seasons:
+        try:
+            frames.append(nfl.import_weekly_rosters(years=[season]))
+        except Exception as e:
+            print(f"  Season {season} rosters skipped: {e}")
+    if not frames:
+        return 0
+    df = pd.concat(frames, ignore_index=True)
 
     inserted = 0
     for _, row in df.iterrows():
