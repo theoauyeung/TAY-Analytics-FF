@@ -36,6 +36,9 @@ def compute_replacement_levels(
     levels: dict[str, float] = {}
     for pos in POSITIONS:
         n = spots.get(pos, 0)
+        if n <= 0:
+            levels[pos] = 0.0
+            continue
         row = conn.execute("""
             SELECT pr.mean_projection
             FROM projections pr
