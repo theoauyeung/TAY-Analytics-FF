@@ -17,6 +17,7 @@ dependencies = [
     "tqdm>=4.66",
     "rich>=13",
     "python-dotenv>=1.0",
+    "torch>=2.3",
 ]
 
 [project.optional-dependencies]
