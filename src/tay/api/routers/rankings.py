@@ -9,6 +9,8 @@ from tay.api.schemas import RankingOut, TierOut, TierPlayerOut, ScarcityPosition
 
 router = APIRouter(tags=['rankings'])
 
+_REPLACEMENT_SPOTS = {'QB': 12, 'RB': 30, 'WR': 30, 'TE': 12}
+
 _RANKING_BASE = """
     SELECT pr.gsis_id, p.name, p.position, p.team,
            pr.vor, pr.vor_rank, COALESCE(a.adp, 999.0) AS adp,
@@ -106,27 +108,41 @@ def get_scarcity(
     model_version: str = Query('neural-v1'),
     conn: duckdb.DuckDBPyConnection = Depends(get_db),
 ) -> list[ScarcityPositionOut]:
+    # Fetch all players with their VOR and tier, sorted by vor_rank
     rows = conn.execute("""
-        SELECT p.position,
-               COUNT(*) AS total,
-               COUNT(CASE WHEN pr.tier = 1 THEN 1 END) AS tier1_count,
-               MAX(pr.vor) AS max_vor,
-               MIN(pr.vor) AS min_vor
+        SELECT p.position, pr.vor, pr.tier
         FROM projections pr
         JOIN players p ON p.gsis_id = pr.gsis_id
         WHERE pr.season = ? AND pr.model_version = ?
           AND p.position IN ('QB', 'RB', 'WR', 'TE')
-        GROUP BY p.position
-        ORDER BY p.position
+          AND pr.vor IS NOT NULL
+        ORDER BY p.position, pr.vor_rank ASC NULLS LAST
     """, [season, model_version]).fetchall()
 
+    # Group by position
+    from collections import defaultdict
+    by_position: dict[str, list[tuple]] = defaultdict(list)
+    for pos, vor, tier in rows:
+        by_position[pos].append((vor, tier))
+
     result = []
-    for pos, total, tier1, max_vor, min_vor in rows:
-        vor_dropoff = (max_vor - min_vor) if max_vor is not None and min_vor is not None else None
+    for pos in sorted(by_position.keys()):
+        players = by_position[pos]
+        total = len(players)
+        top_tier_count = sum(1 for _, tier in players if tier == 1)
+        max_vor = players[0][0] if players else None
+
+        # VOR at replacement-level rank (0-indexed: rank N = index N-1)
+        repl_idx = _REPLACEMENT_SPOTS.get(pos, 30) - 1
+        repl_idx = min(repl_idx, total - 1)  # cap at available players
+        repl_vor = players[repl_idx][0] if players else None
+
+        vor_dropoff = (max_vor - repl_vor) if max_vor is not None and repl_vor is not None else None
+
         result.append(ScarcityPositionOut(
             position=pos,
             total_players=total,
-            top_tier_count=tier1 or 0,
+            top_tier_count=top_tier_count,
             vor_dropoff=vor_dropoff,
         ))
     return result

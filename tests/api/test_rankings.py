@@ -67,3 +67,6 @@ def test_get_scarcity_fields():
     assert 'total_players' in item
     assert 'top_tier_count' in item
     assert 'vor_dropoff' in item
+    # dropoff should be non-negative (max >= replacement-level)
+    if item['vor_dropoff'] is not None:
+        assert item['vor_dropoff'] >= 0
