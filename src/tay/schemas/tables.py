@@ -195,6 +195,18 @@ CREATE TABLE IF NOT EXISTS projections (
     vor_rank            INTEGER,
     adp_delta           DOUBLE,
     tier                INTEGER,
+    -- Monte Carlo simulation results (injury-adjusted, 1000 sims)
+    sim_mean            DOUBLE,
+    sim_std             DOUBLE,
+    sim_p10             DOUBLE,
+    sim_p25             DOUBLE,
+    sim_p50             DOUBLE,
+    sim_p75             DOUBLE,
+    sim_p90             DOUBLE,
+    sim_boom_prob       DOUBLE,
+    sim_bust_prob       DOUBLE,
+    avail_mean          DOUBLE,   -- expected games played
+    avail_std           DOUBLE,   -- std dev of games played
     created_at          TIMESTAMP DEFAULT current_timestamp,
     PRIMARY KEY (gsis_id, season, model_version)
 )
