@@ -45,11 +45,19 @@ def compute_availability(
             LIMIT 3
         """, [gsis_id, season]).fetchall()
 
-        # Normalize to 17-game scale
+        # Normalize to 17-game scale (rows ordered most-recent first)
         games_17 = [g * (17 / _season_games(s)) for s, g in rows]
         n = len(games_17)
 
-        player_mean = sum(games_17) / n if n > 0 else 0.0
+        # Recency-weighted mean: most recent season carries 0.6 weight so a
+        # player who was healthy last year isn't dragged down by old injuries.
+        _recency = [0.6, 0.3, 0.1]
+        if n > 0:
+            w = _recency[:n]
+            w_sum = sum(w)
+            player_mean = sum(wi * gi for wi, gi in zip(w, games_17)) / w_sum
+        else:
+            player_mean = 0.0
         if n >= 2:
             variance = sum((x - player_mean) ** 2 for x in games_17) / n
             player_std = variance ** 0.5
