@@ -62,7 +62,7 @@ def compute_availability(
             variance = sum((x - player_mean) ** 2 for x in games_17) / n
             player_std = variance ** 0.5
         else:
-            player_std = 0.0
+            player_std = prior_std  # not enough data: use prior
 
         weight = n / (n + 2)
         blended_mean = weight * player_mean + (1 - weight) * prior_mean

@@ -8,6 +8,28 @@ from tay.simulation.availability import compute_availability
 N_SIMS = 1000
 SEASON_GAMES = 17
 
+_SIM_COLUMNS = [
+    ('sim_mean',      'DOUBLE'),
+    ('sim_std',       'DOUBLE'),
+    ('sim_p10',       'DOUBLE'),
+    ('sim_p25',       'DOUBLE'),
+    ('sim_p50',       'DOUBLE'),
+    ('sim_p75',       'DOUBLE'),
+    ('sim_p90',       'DOUBLE'),
+    ('sim_boom_prob', 'DOUBLE'),
+    ('sim_bust_prob', 'DOUBLE'),
+    ('avail_mean',    'DOUBLE'),
+    ('avail_std',     'DOUBLE'),
+]
+
+
+def _migrate_projections(conn: duckdb.DuckDBPyConnection) -> None:
+    """Add sim_* and avail_* columns to projections if they don't exist yet."""
+    for col, dtype in _SIM_COLUMNS:
+        conn.execute(
+            f"ALTER TABLE projections ADD COLUMN IF NOT EXISTS {col} {dtype}"
+        )
+
 # Availability adjusts the projected mean by at most this fraction.
 # Talent (mean_projection) is the primary signal; injury risk only applies
 # a small discount so a chronically-injured player takes a ≤15% hit, not a 40%+ one.
@@ -26,6 +48,8 @@ def run_simulation(
 
     Returns total rows updated.
     """
+    _migrate_projections(conn)
+
     availability = compute_availability(conn, season, model_version)
 
     players = conn.execute("""
