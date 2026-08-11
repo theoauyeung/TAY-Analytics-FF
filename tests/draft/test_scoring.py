@@ -75,6 +75,16 @@ def test_roster_fit_full_position_penalty():
     assert rf < 1.0
 
 
+def test_roster_fit_respects_custom_roster_config():
+    # Custom league: RB requires 3 starters
+    custom_config = {'QB': 1, 'RB': 3, 'WR': 2, 'TE': 1}
+    p = _player(position='RB')
+    # With 2 RBs filled and requirement=3, position is NOT full → no penalty
+    user_roster = {'QB': [], 'RB': ['a', 'b'], 'WR': [], 'TE': [], 'FLEX': []}
+    rf = roster_fit(p, user_roster, roster_config=custom_config)
+    assert rf >= 1.0  # no penalty since 2 < 3 required
+
+
 def test_score_player_returns_recommendation():
     p = _player(vor=80.0, adp=5.0, vor_rank=3)
     state = _state()

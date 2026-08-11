@@ -23,11 +23,16 @@ def positional_urgency(
     return max(0.0, min(1.0, 1.0 - available_at_position / cap))
 
 
-def roster_fit(player: PlayerProjection, user_roster: dict[str, list[str]]) -> float:
+def roster_fit(
+    player: PlayerProjection,
+    user_roster: dict[str, list[str]],
+    roster_config: dict[str, int] | None = None,
+) -> float:
     """Multiplier [0.5, 1.2] for how well player fills user's roster needs."""
     pos = player.position
+    requirements = roster_config if roster_config is not None else _STARTER_REQUIREMENTS
     filled = len(user_roster.get(pos, []))
-    required = _STARTER_REQUIREMENTS.get(pos, 1)
+    required = requirements.get(pos, 1)
     flex_filled = len(user_roster.get('FLEX', []))
 
     score = 1.0
@@ -55,7 +60,7 @@ def score_player(
         available_by_position.get(player.position, 30),
         replacement_spots,
     )
-    rf = roster_fit(player, state.user_roster)
+    rf = roster_fit(player, state.user_roster, state.league_settings.roster_config)
 
     base_value = player.vor
     draft_score = (base_value * rf * (1.0 + pu)) * (0.5 + 0.5 * fa)

@@ -76,8 +76,12 @@ def recommend(
     alternatives = scored[1:4]
 
     positional_needs = sorted(
-        available_by_position.keys(),
-        key=lambda pos: positional_urgency(pos, available_by_position[pos], REPLACEMENT_SPOTS),
+        REPLACEMENT_SPOTS.keys(),
+        key=lambda pos: positional_urgency(
+            pos,
+            available_by_position.get(pos, 0),  # 0 if exhausted → urgency = 1.0
+            REPLACEMENT_SPOTS,
+        ),
         reverse=True,
     )
 

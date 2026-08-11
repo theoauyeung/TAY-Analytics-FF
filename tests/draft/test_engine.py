@@ -118,6 +118,16 @@ def test_recommend_board_state_fields():
     conn.close()
 
 
+def test_recommend_exhausted_position_appears_in_needs():
+    conn = _make_db()
+    # Draft all QBs — Q1 and Q2 both taken
+    state = _state(drafted_ids=['Q1', 'Q2'])
+    result = recommend(conn, state)
+    # QB exhausted → should appear in positional_needs (likely first)
+    assert 'QB' in result.positional_needs
+    conn.close()
+
+
 def test_recommend_may_not_make_it_back_list():
     conn = _make_db()
     # With picks_until_next=10 and ADP=2 (R1), R1 should flag as may-not-make-it-back
