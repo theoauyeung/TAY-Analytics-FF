@@ -1,34 +1,33 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { LeagueSettings } from '../types'
 import { DEFAULT_LEAGUE_SETTINGS } from '../types'
-
-const STORAGE_KEY = 'tay-league-settings'
-
-function load(): LeagueSettings {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) return { ...DEFAULT_LEAGUE_SETTINGS, ...JSON.parse(raw) }
-  } catch {
-    // ignore parse errors
-  }
-  return DEFAULT_LEAGUE_SETTINGS
-}
+import { fetchLeagueSettings, saveLeagueSettings } from '../api/league'
 
 export function useLeagueSettings() {
-  const [settings, setSettings] = useState<LeagueSettings>(load)
+  const queryClient = useQueryClient()
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
-  }, [settings])
+  const { data: settings = DEFAULT_LEAGUE_SETTINGS, isLoading } = useQuery({
+    queryKey: ['leagueSettings'],
+    queryFn: fetchLeagueSettings,
+    staleTime: 300_000,
+  })
+
+  const { mutate: saveMutation, isPending: isSaving } = useMutation({
+    mutationFn: saveLeagueSettings,
+    onSuccess: (_data, variables) => {
+      queryClient.setQueryData(['leagueSettings'], variables)
+    },
+  })
 
   const update = useCallback((patch: Partial<LeagueSettings>) => {
-    setSettings(prev => ({ ...prev, ...patch }))
-  }, [])
+    const next = { ...settings, ...patch }
+    saveMutation(next)
+  }, [settings, saveMutation])
 
   const reset = useCallback(() => {
-    setSettings(DEFAULT_LEAGUE_SETTINGS)
-    localStorage.removeItem(STORAGE_KEY)
-  }, [])
+    saveMutation(DEFAULT_LEAGUE_SETTINGS)
+  }, [saveMutation])
 
-  return { settings, update, reset }
+  return { settings, update, reset, isLoading, isSaving }
 }
