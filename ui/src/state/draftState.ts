@@ -1,6 +1,22 @@
 import { createContext, useContext, useReducer, type ReactNode } from 'react'
 import type { DraftConfig, DraftedPick, LiveDraftState } from '../types'
-import { DEFAULT_DRAFT_CONFIG } from '../data'
+
+const DEFAULT_DRAFT_CONFIG: DraftConfig = {
+  teams: 12,
+  userPickPosition: 6,
+  scoringFormat: 'ppr',
+  rosterConfig: {
+    QB: 1,
+    RB: 2,
+    WR: 2,
+    TE: 1,
+    FLEX: 1,
+    BENCH: 6,
+    K: 0,
+    DST: 0,
+  },
+  totalRounds: 13,
+}
 
 // ─── Snake-draft helpers ───────────────────────────────────────────────────
 
