@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from tay.db import get_conn, init_schema
-from tay.api.routers import health
+from tay.api.routers import health, players
 
 
 @asynccontextmanager
@@ -31,6 +31,7 @@ def create_app() -> FastAPI:
         allow_headers=['*'],
     )
     app.include_router(health.router)
+    app.include_router(players.router)
     return app
 
 
