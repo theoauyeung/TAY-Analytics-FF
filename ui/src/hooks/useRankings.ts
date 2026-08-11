@@ -1,27 +1,27 @@
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { Ranking, RankingFilters } from '../types'
-import { MOCK_RANKINGS } from '../data'
-
-async function fetchRankings(filters: RankingFilters): Promise<Ranking[]> {
-  // Simulate async — swap this function body for a real API call later
-  await new Promise((r) => setTimeout(r, 0))
-
-  return MOCK_RANKINGS.filter((r) => {
-    if (filters.position !== 'ALL' && r.player.position !== filters.position) return false
-    if (filters.search) {
-      const q = filters.search.toLowerCase()
-      if (!r.player.name.toLowerCase().includes(q) &&
-          !r.player.team.toLowerCase().includes(q)) return false
-    }
-    if (filters.tierFilter !== null && r.tier.number !== filters.tierFilter) return false
-    return true
-  })
-}
+import { fetchRankings } from '../api/rankings'
 
 export function useRankings(filters: RankingFilters) {
-  const { data, isLoading } = useQuery({
-    queryKey: ['rankings', filters],
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['rankings', filters.position],
     queryFn: () => fetchRankings(filters),
+    staleTime: 60_000,
   })
-  return { rankings: data ?? [], isLoading }
+
+  const rankings = useMemo(() => {
+    const all = data ?? []
+    return all.filter(r => {
+      if (filters.search) {
+        const q = filters.search.toLowerCase()
+        if (!r.player.name.toLowerCase().includes(q) &&
+            !r.player.team.toLowerCase().includes(q)) return false
+      }
+      if (filters.tierFilter !== null && r.tier.number !== filters.tierFilter) return false
+      return true
+    })
+  }, [data, filters.search, filters.tierFilter])
+
+  return { rankings, isLoading, error, refetch }
 }
