@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { Zap, AlertTriangle } from 'lucide-react'
 import clsx from 'clsx'
 import { useDraftState } from '../../hooks/useDraftState'
-import { useMockRecommendation } from '../../hooks/useMockRecommendation'
+import { useRecommendation } from '../../hooks/useRecommendation'
+import { useRankings } from '../../hooks/useRankings'
+import { ApiError } from '../../api/client'
 import { PositionBadge } from '../ui/Badge'
 import { AlternativeCard } from './AlternativeCard'
 import { ScarcityBar } from './ScarcityBar'
@@ -10,7 +12,8 @@ import { MayNotMakeItBack } from './MayNotMakeItBack'
 
 export function RecommendationPanel() {
   const { state, draftPlayer } = useDraftState()
-  const reco = useMockRecommendation(state)
+  const { recommendation: reco, error: recoError } = useRecommendation()
+  const { rankings } = useRankings({ position: 'ALL', search: '', format: 'ppr', draftType: 'redraft', year: 2026, tierFilter: null })
   const [selectedAltIdx, setSelectedAltIdx] = useState<number | null>(null)
 
   const totalPicks = state.config.teams * state.config.totalRounds
@@ -22,6 +25,17 @@ export function RecommendationPanel() {
         <div className="text-center">
           <div className="text-2xl font-bold mb-2">Draft Complete</div>
           <div className="text-sm">All rounds filled. Check your roster in the right panel.</div>
+        </div>
+      </div>
+    )
+  }
+
+  if (recoError instanceof ApiError && recoError.status === 422) {
+    return (
+      <div className="flex-1 flex items-center justify-center text-text-muted">
+        <div className="text-center">
+          <div className="text-lg font-bold mb-1">Draft Pool Exhausted</div>
+          <div className="text-sm">No available players to recommend.</div>
         </div>
       </div>
     )
@@ -184,7 +198,7 @@ export function RecommendationPanel() {
       {/* May Not Make It Back */}
       {reco.mayNotMakeItBack.length > 0 && (
         <div>
-          <MayNotMakeItBack items={reco.mayNotMakeItBack} allRankings={[]} />
+          <MayNotMakeItBack items={reco.mayNotMakeItBack} allRankings={rankings} />
         </div>
       )}
     </div>

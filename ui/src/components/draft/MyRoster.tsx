@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { useDraftState } from '../../hooks/useDraftState'
-import { useMockRecommendation } from '../../hooks/useMockRecommendation'
+import { useRecommendation } from '../../hooks/useRecommendation'
 import { PositionBadge } from '../ui/Badge'
 import type { Position, PlayerDetail, RosterConfig } from '../../types'
 
@@ -55,7 +55,7 @@ function strengthLabel(count: number, needed: number): { label: string; color: s
 
 export function MyRoster() {
   const { state, userPicks } = useDraftState()
-  const reco = useMockRecommendation(state)
+  const { recommendation: reco } = useRecommendation()
 
   const config = state.config
   const userRoster: PlayerDetail[] = userPicks.map(p => p.player)

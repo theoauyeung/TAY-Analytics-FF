@@ -1,22 +1,20 @@
 import { AlertCircle } from 'lucide-react'
 import clsx from 'clsx'
 import type { FutureAvailability, Ranking } from '../../types'
-import { MOCK_RANKINGS } from '../../data'
 import { PositionBadge } from '../ui/Badge'
 
 interface Props {
   items: FutureAvailability[]
-  allRankings: Ranking[]    // kept in interface for future real-data use; uses MOCK_RANKINGS internally for now
+  allRankings: Ranking[]
 }
 
-export function MayNotMakeItBack({ items }: Props) {
+export function MayNotMakeItBack({ items, allRankings }: Props) {
   if (items.length === 0) return null
 
-  // Look up player details from MOCK_RANKINGS by playerId
   const withPlayers = items
     .map(item => ({
       item,
-      ranking: MOCK_RANKINGS.find(r => r.player.id === item.playerId),
+      ranking: allRankings.find(r => r.player.id === item.playerId),
     }))
     .filter((x): x is { item: FutureAvailability; ranking: Ranking } => x.ranking !== undefined)
 
