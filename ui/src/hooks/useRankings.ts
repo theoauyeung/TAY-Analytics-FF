@@ -5,7 +5,7 @@ import { fetchRankings } from '../api/rankings'
 
 export function useRankings(filters: RankingFilters) {
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['rankings', filters.position],
+    queryKey: ['rankings', filters.position, filters.format, filters.year],
     queryFn: () => fetchRankings(filters),
     staleTime: 60_000,
   })

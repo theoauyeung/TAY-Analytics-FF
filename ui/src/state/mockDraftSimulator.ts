@@ -29,6 +29,7 @@ export function useAutoAdvance() {
       setAutoAdvancing(false)
       return
     }
+    if (rankings.length === 0) return  // still loading
     const draftedIds = state.picks.map(p => p.player.id)
     const pick = bestAvailablePlayer(draftedIds, rankings)
     if (!pick) {
