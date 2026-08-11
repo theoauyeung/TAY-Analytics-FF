@@ -3,7 +3,7 @@ from __future__ import annotations
 import duckdb
 
 from tay.draft.models import DraftState, PlayerProjection, RecommendationState
-from tay.draft.scoring import future_availability, positional_urgency, score_player
+from tay.draft.scoring import positional_urgency, score_player
 
 REPLACEMENT_SPOTS: dict[str, int] = {'QB': 12, 'RB': 30, 'WR': 30, 'TE': 12}
 
@@ -66,6 +66,11 @@ def recommend(
         for p in players
     ]
     scored.sort(key=lambda r: r.draft_score, reverse=True)
+
+    if not scored:
+        raise ValueError(
+            f"No available players for season={state.season} model={state.model_version}"
+        )
 
     top_pick = scored[0]
     alternatives = scored[1:4]

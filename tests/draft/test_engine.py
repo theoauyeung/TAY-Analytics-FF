@@ -74,7 +74,6 @@ def _state(drafted_ids=None, current_pick=1, user_roster=None):
 
 def test_load_projections_returns_all_available():
     conn = _make_db()
-    state = _state()
     players = load_projections(conn, 2026, 'test-v1', drafted_ids=[])
     assert len(players) == 6
     conn.close()
