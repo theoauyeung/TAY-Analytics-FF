@@ -22,11 +22,12 @@ def test_get_players_filter_by_position():
 def test_get_players_fields():
     r = client.get('/players')
     p = r.json()[0]
-    assert 'gsis_id' in p
-    assert 'name' in p
-    assert 'vor' in p
-    assert 'sim_mean' in p
-    assert 'adp' in p
+    expected_keys = {
+        'gsis_id', 'name', 'position', 'team', 'season', 'model_version',
+        'mean_projection', 'vor', 'vor_rank', 'tier', 'adp_delta', 'adp',
+        'sim_mean', 'sim_p10', 'sim_p90', 'sim_boom_prob', 'sim_bust_prob', 'avail_mean',
+    }
+    assert expected_keys == set(p.keys())
 
 
 def test_get_player_by_id():
