@@ -1,7 +1,8 @@
 import { useCallback } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useDraftContext, picksUntilNextTurn } from '../state/draftState'
-import { MOCK_PLAYERS } from '../data'
-import type { PlayerDetail, DraftConfig, DraftedPick, LiveDraftState } from '../types'
+import { fetchPlayers } from '../api/players'
+import type { PlayerDetail, DraftConfig, DraftedPick } from '../types'
 
 export function useDraftState() {
   const { state, dispatch } = useDraftContext()
@@ -11,10 +12,14 @@ export function useDraftState() {
 
   const userPicks: DraftedPick[] = state.picks.filter(p => p.isUserPick)
 
+  const { data: allPlayers = [] } = useQuery({
+    queryKey: ['players'],
+    queryFn: () => fetchPlayers(),
+    staleTime: 300_000,
+  })
+
   const draftedPlayerIds = new Set(state.picks.map(p => p.player.id))
-  const availablePlayers: PlayerDetail[] = MOCK_PLAYERS.filter(
-    p => !draftedPlayerIds.has(p.id)
-  )
+  const availablePlayers: PlayerDetail[] = allPlayers.filter(p => !draftedPlayerIds.has(p.id))
 
   const draftPlayer = useCallback(
     (player: PlayerDetail, isUserPick?: boolean) =>

@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { MOCK_RANKINGS } from '../../data'
+import { useRankings } from '../../hooks/useRankings'
 import { PositionBadge } from '../ui/Badge'
 import type { PlayerDetail } from '../../types'
 import { X } from 'lucide-react'
@@ -13,16 +13,25 @@ interface Props {
 export function RosterBuilder({ roster, onAdd, onRemove }: Props) {
   const [search, setSearch] = useState('')
 
+  const { rankings } = useRankings({
+    position: 'ALL',
+    search: '',
+    format: 'ppr',
+    draftType: 'redraft',
+    year: 2026,
+    tierFilter: null,
+  })
+
   const suggestions = useMemo(() => {
     if (!search.trim()) return []
     const rosterIds = new Set(roster.map(p => p.id))
     const q = search.toLowerCase()
-    return MOCK_RANKINGS
+    return rankings
       .filter(r => !rosterIds.has(r.player.id) &&
         (r.player.name.toLowerCase().includes(q) || r.player.team.toLowerCase().includes(q))
       )
       .slice(0, 8)
-  }, [search, roster])
+  }, [search, roster, rankings])
 
   return (
     <div className="flex flex-col gap-3">

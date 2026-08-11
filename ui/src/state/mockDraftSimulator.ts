@@ -1,21 +1,23 @@
 import { useState, useEffect, useCallback } from 'react'
-import { MOCK_RANKINGS } from '../data'
-import type { PlayerDetail } from '../types'
+import type { PlayerDetail, Ranking } from '../types'
 import { useDraftState } from '../hooks/useDraftState'
+import { useRankings } from '../hooks/useRankings'
 
-/** Pure function — returns the highest-VOR undrafted player. */
-export function bestAvailablePlayer(draftedIds: string[]): PlayerDetail | null {
-  const pick = MOCK_RANKINGS.find(r => !draftedIds.includes(r.player.id))
+export function bestAvailablePlayer(draftedIds: string[], rankings: Ranking[]): PlayerDetail | null {
+  const pick = rankings.find(r => !draftedIds.includes(r.player.id))
   return pick?.player ?? null
 }
 
-/**
- * Fires one auto-pick per render frame (via setTimeout) until isUserTurn is
- * true or the draft is complete. Calling startAutoAdvance() begins the loop;
- * it stops automatically when the user's turn arrives.
- */
 export function useAutoAdvance() {
   const { state, draftPlayer, isUserTurn } = useDraftState()
+  const { rankings } = useRankings({
+    position: 'ALL',
+    search: '',
+    format: 'ppr',
+    draftType: 'redraft',
+    year: 2026,
+    tierFilter: null,
+  })
   const [autoAdvancing, setAutoAdvancing] = useState(false)
 
   const isDraftComplete =
@@ -28,15 +30,14 @@ export function useAutoAdvance() {
       return
     }
     const draftedIds = state.picks.map(p => p.player.id)
-    const pick = bestAvailablePlayer(draftedIds)
+    const pick = bestAvailablePlayer(draftedIds, rankings)
     if (!pick) {
       setAutoAdvancing(false)
       return
     }
-    // 150ms delay gives a visual "picks happening" feel
     const timer = setTimeout(() => draftPlayer(pick), 150)
     return () => clearTimeout(timer)
-  }, [autoAdvancing, isUserTurn, isDraftComplete, state.picks, draftPlayer])
+  }, [autoAdvancing, isUserTurn, isDraftComplete, state.picks, draftPlayer, rankings])
 
   const startAutoAdvance = useCallback(() => setAutoAdvancing(true), [])
   const stopAutoAdvance = useCallback(() => setAutoAdvancing(false), [])

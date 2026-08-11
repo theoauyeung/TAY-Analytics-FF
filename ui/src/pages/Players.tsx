@@ -1,31 +1,42 @@
-import { useState, useMemo } from 'react'
-import { MOCK_RANKINGS } from '../data'
+import { useState, useMemo, useEffect } from 'react'
 import type { Ranking } from '../types'
+import { useRankings } from '../hooks/useRankings'
 import { PlayerSearch, PlayerListRow, ProjectionChart, ComparablePlayers } from '../components/players'
 import { PositionBadge } from '../components/ui/Badge'
 
 export default function Players() {
-  const [search, setSearch]     = useState('')
+  const [search, setSearch] = useState('')
   const [position, setPosition] = useState('ALL')
-  const [selectedId, setSelectedId] = useState<string | null>(MOCK_RANKINGS[0]?.player.id ?? null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
-  const filtered = useMemo(() =>
-    MOCK_RANKINGS.filter(r => {
-      if (position !== 'ALL' && r.player.position !== position) return false
-      if (search) {
-        const q = search.toLowerCase()
-        return r.player.name.toLowerCase().includes(q) ||
-               r.player.team.toLowerCase().includes(q)
-      }
-      return true
-    }),
-    [search, position]
-  )
+  const { rankings, isLoading, error, refetch } = useRankings({
+    position: position as 'ALL' | 'QB' | 'RB' | 'WR' | 'TE',
+    search,
+    format: 'ppr',
+    draftType: 'redraft',
+    year: 2026,
+    tierFilter: null,
+  })
+
+  useEffect(() => {
+    if (rankings.length > 0 && selectedId === null) {
+      setSelectedId(rankings[0].player.id)
+    }
+  }, [rankings, selectedId])
 
   const selectedRanking: Ranking | undefined = useMemo(
-    () => MOCK_RANKINGS.find(r => r.player.id === selectedId),
-    [selectedId]
+    () => rankings.find(r => r.player.id === selectedId),
+    [rankings, selectedId]
   )
+
+  if (error) {
+    return (
+      <div className="flex h-full items-center justify-center flex-col gap-3 text-text-secondary">
+        <p>Failed to load players</p>
+        <button onClick={() => refetch()} className="text-sm text-accent underline">Retry</button>
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-full overflow-hidden">
@@ -40,7 +51,10 @@ export default function Players() {
           />
         </div>
         <div className="flex-1 overflow-y-auto">
-          {filtered.map(r => (
+          {isLoading && (
+            <p className="text-sm text-text-muted p-4 text-center">Loading…</p>
+          )}
+          {rankings.map(r => (
             <PlayerListRow
               key={r.player.id}
               ranking={r}
@@ -48,7 +62,7 @@ export default function Players() {
               onClick={() => setSelectedId(r.player.id)}
             />
           ))}
-          {filtered.length === 0 && (
+          {!isLoading && rankings.length === 0 && (
             <p className="text-sm text-text-muted p-4 text-center">No players found</p>
           )}
         </div>
@@ -57,7 +71,6 @@ export default function Players() {
       {/* Right: player detail */}
       {selectedRanking ? (
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* Header */}
           <div className="flex items-start gap-4">
             {selectedRanking.player.imageUrl && (
               <img
@@ -72,8 +85,12 @@ export default function Players() {
               <div className="flex items-center gap-2 mt-1">
                 <PositionBadge position={selectedRanking.player.position} />
                 <span className="text-sm text-text-secondary">{selectedRanking.player.team}</span>
-                <span className="text-sm text-text-muted">· Bye {selectedRanking.player.byeWeek}</span>
-                <span className="text-sm text-text-muted">· Age {selectedRanking.player.age}</span>
+                {selectedRanking.player.byeWeek > 0 && (
+                  <span className="text-sm text-text-muted">· Bye {selectedRanking.player.byeWeek}</span>
+                )}
+                {selectedRanking.player.age > 0 && (
+                  <span className="text-sm text-text-muted">· Age {selectedRanking.player.age}</span>
+                )}
               </div>
             </div>
             <div className="ml-auto text-right">
@@ -87,12 +104,10 @@ export default function Players() {
             </div>
           </div>
 
-          {/* Projection distribution */}
           <div className="bg-bg-card border border-border rounded-xl p-4">
             <ProjectionChart player={selectedRanking.player} />
           </div>
 
-          {/* Key metrics */}
           <div className="grid grid-cols-3 gap-3">
             {[
               { label: 'Model Confidence', value: `${Math.round(selectedRanking.player.modelConfidence * 100)}%` },
@@ -109,14 +124,13 @@ export default function Players() {
             ))}
           </div>
 
-          {/* Comparable players */}
           <div className="bg-bg-card border border-border rounded-xl p-4">
-            <ComparablePlayers ranking={selectedRanking} allRankings={MOCK_RANKINGS} />
+            <ComparablePlayers ranking={selectedRanking} allRankings={rankings} />
           </div>
         </div>
       ) : (
         <div className="flex-1 flex items-center justify-center text-text-muted text-sm">
-          Select a player
+          {isLoading ? 'Loading…' : 'Select a player'}
         </div>
       )}
     </div>

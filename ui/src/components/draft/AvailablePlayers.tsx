@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { Search } from 'lucide-react'
 import clsx from 'clsx'
 import type { Position, PlayerDetail } from '../../types'
-import { MOCK_RANKINGS } from '../../data'
+import { useRankings } from '../../hooks/useRankings'
 import { useDraftState } from '../../hooks/useDraftState'
 import { PositionBadge } from '../ui/Badge'
 
@@ -14,6 +14,15 @@ export function AvailablePlayers() {
   const [posFilter, setPosFilter] = useState<Position | 'ALL'>('ALL')
   const [pendingId, setPendingId] = useState<string | null>(null)
 
+  const { rankings } = useRankings({
+    position: 'ALL',
+    search: '',
+    format: 'ppr',
+    draftType: 'redraft',
+    year: 2026,
+    tierFilter: null,
+  })
+
   // Build a set of available player IDs for fast lookup
   const availableIds = useMemo(
     () => new Set(availablePlayers.map(p => p.id)),
@@ -21,7 +30,7 @@ export function AvailablePlayers() {
   )
 
   const available = useMemo(() => {
-    return MOCK_RANKINGS
+    return rankings
       .filter(r => availableIds.has(r.player.id))
       .filter(r => posFilter === 'ALL' || r.player.position === posFilter)
       .filter(r => {
@@ -32,7 +41,7 @@ export function AvailablePlayers() {
           r.player.team.toLowerCase().includes(q)
         )
       })
-  }, [availableIds, posFilter, search])
+  }, [rankings, availableIds, posFilter, search])
 
   // Dismiss pending on Escape
   useEffect(() => {

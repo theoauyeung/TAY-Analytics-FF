@@ -1,17 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
 import type { PlayerDetail } from '../types'
-import { MOCK_PLAYERS } from '../data'
-
-async function fetchPlayer(id: string): Promise<PlayerDetail | undefined> {
-  await new Promise((r) => setTimeout(r, 0))
-  return MOCK_PLAYERS.find((p) => p.id === id)
-}
+import { fetchPlayer } from '../api/players'
 
 export function usePlayer(id: string | null) {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['player', id],
     queryFn: () => fetchPlayer(id!),
     enabled: id !== null,
+    staleTime: 60_000,
   })
-  return { player: data, isLoading }
+  return { player: data as PlayerDetail | undefined, isLoading, error }
 }
