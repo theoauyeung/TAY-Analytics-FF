@@ -266,14 +266,14 @@ CREATE TABLE IF NOT EXISTS player_features (
 
     -- Season N-2 raw stats
     lag2_fantasy_ppr        DOUBLE,
-    lag2_targets            DOUBLE,
-    lag2_carries            DOUBLE,
+    lag2_targets            INTEGER,
+    lag2_carries            INTEGER,
     lag2_pass_yards         DOUBLE,
 
     -- Season N-3 raw stats
     lag3_fantasy_ppr        DOUBLE,
-    lag3_targets            DOUBLE,
-    lag3_carries            DOUBLE,
+    lag3_targets            INTEGER,
+    lag3_carries            INTEGER,
     lag3_pass_yards         DOUBLE,
 
     -- EWMA (0.6 × N-1  +  0.3 × N-2  +  0.1 × N-3)
