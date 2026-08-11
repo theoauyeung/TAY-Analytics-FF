@@ -38,7 +38,10 @@ def draft_recommend(
     conn: duckdb.DuckDBPyConnection = Depends(get_db),
 ) -> dict:
     state = _to_draft_state(body)
-    result = recommend(conn, state)
+    try:
+        result = recommend(conn, state)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
     return dataclasses.asdict(result)
 
 

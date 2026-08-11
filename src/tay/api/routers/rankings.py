@@ -1,5 +1,6 @@
 """GET /rankings, GET /tiers/{position}, GET /scarcity"""
 from __future__ import annotations
+from collections import defaultdict
 from typing import Literal
 import duckdb
 from fastapi import APIRouter, Depends, Query
@@ -120,7 +121,6 @@ def get_scarcity(
     """, [season, model_version]).fetchall()
 
     # Group by position
-    from collections import defaultdict
     by_position: dict[str, list[tuple]] = defaultdict(list)
     for pos, vor, tier in rows:
         by_position[pos].append((vor, tier))

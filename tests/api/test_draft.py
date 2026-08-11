@@ -69,3 +69,11 @@ def test_draft_session_save_and_retrieve():
 def test_draft_session_not_found():
     r = client.get('/draft/session/nonexistent')
     assert r.status_code == 404
+
+
+def test_draft_recommend_empty_pool_returns_422():
+    # All players drafted — pool exhausted
+    all_ids = ['P1', 'P2', 'P3', 'P4']
+    state = {**_STATE, 'drafted_ids': all_ids}
+    r = client.post('/draft/recommend', json=state)
+    assert r.status_code == 422
