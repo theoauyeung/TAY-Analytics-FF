@@ -1,7 +1,6 @@
 """Tests for session persistence (save_session, load_session)."""
 from __future__ import annotations
 import json
-import pytest
 import duckdb
 from tay.draft.models import LeagueSettings, DraftState
 from tay.draft.session import save_session, load_session

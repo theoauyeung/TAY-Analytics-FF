@@ -35,7 +35,6 @@ def main() -> None:
 
     print(f'=== TAY Draft Engine — Season {args.season}, Pick {args.pick} ===')
     result = run_draft_pipeline(conn, state)
-    conn.close()
 
     top = result.top_pick
     print(f'\nTOP RECOMMENDATION: {top.player.name} ({top.player.position}, {top.player.team})')
@@ -57,6 +56,7 @@ def main() -> None:
 
     print(f'\nPOSITIONAL NEEDS (by urgency): {", ".join(result.positional_needs)}')
     print(f'Round {result.board_state["round"]} | {result.board_state["picks_until_next"]} picks until next turn')
+    conn.close()
 
 
 if __name__ == '__main__':
