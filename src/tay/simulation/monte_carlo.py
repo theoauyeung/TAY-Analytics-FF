@@ -8,6 +8,11 @@ from tay.simulation.availability import compute_availability
 N_SIMS = 1000
 SEASON_GAMES = 17
 
+# Availability adjusts the projected mean by at most this fraction.
+# Talent (mean_projection) is the primary signal; injury risk only applies
+# a small discount so a chronically-injured player takes a ≤15% hit, not a 40%+ one.
+AVAIL_ALPHA = 0.15
+
 _RNG_SEED = 42
 
 
@@ -36,12 +41,14 @@ def run_simulation(
     for gsis_id, mean_projection, std_dev in players:
         avail_mean, avail_std = availability.get(gsis_id, (13.0, 4.0))
 
-        ppg_mean = mean_projection / SEASON_GAMES
-        ppg_std = max(std_dev / SEASON_GAMES, 0.1)
-
+        # Draw games from availability distribution, then convert to a small
+        # scale factor: fully healthy (17 games) → 1.0, worst case → 1 - AVAIL_ALPHA.
         games = rng.normal(avail_mean, avail_std, n_sims).clip(0, SEASON_GAMES)
-        per_game = rng.normal(ppg_mean, ppg_std, n_sims).clip(0, None)
-        totals = (games * per_game).clip(0, None)
+        avail_scale = 1.0 - AVAIL_ALPHA * (1.0 - games / SEASON_GAMES)
+
+        # Season total: model mean (talent signal) × small availability adjustment
+        # + model-level noise. std_dev drives distribution width, not games played.
+        totals = rng.normal(mean_projection * avail_scale, std_dev, n_sims).clip(0, None)
 
         sim_mean = float(totals.mean())
         sim_std = float(totals.std())
