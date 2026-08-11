@@ -36,13 +36,12 @@ export function useRecommendation(): UseRecommendationResult {
 
   const totalPicks = state.config.teams * state.config.totalRounds
   const draftStarted = state.picks.length > 0 || state.currentOverallPick > 1
-  const hasUserPicks = state.picks.some(p => p.isUserPick)
   const isDraftComplete = state.currentOverallPick > totalPicks
 
   const { data, error } = useQuery({
     queryKey: ['recommendation', state.currentOverallPick, state.picks.length],
     queryFn: () => fetchRecommendation(state),
-    enabled: isUserTurn && draftStarted && hasUserPicks && !isDraftComplete,
+    enabled: isUserTurn && draftStarted && !isDraftComplete,
     staleTime: 0,
     retry: false,
   })

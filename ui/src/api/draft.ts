@@ -172,9 +172,14 @@ function toDraftStateIn(state: LiveDraftState) {
     total_picks: state.config.teams * state.config.totalRounds,
     user_pick_position: state.config.userPickPosition,
     drafted_ids: state.picks.map(p => p.player.id),
-    user_roster: state.picks
-      .filter(p => p.isUserPick)
-      .map(p => p.player.id),
+    user_roster: (() => {
+      const roster: Record<string, string[]> = {}
+      for (const pick of state.picks.filter(p => p.isUserPick)) {
+        const pos = pick.player.position
+        ;(roster[pos] ??= []).push(pick.player.id)
+      }
+      return roster
+    })(),
   }
 }
 
@@ -213,7 +218,7 @@ export async function fetchRecommendation(state: LiveDraftState): Promise<Recomm
 }
 
 export async function saveSession(sessionId: string, state: LiveDraftState): Promise<void> {
-  await apiFetch('/sessions', {
+  await apiFetch('/draft/session', {
     method: 'POST',
     body: JSON.stringify({
       session_id: sessionId,
