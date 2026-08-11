@@ -1,5 +1,4 @@
 from __future__ import annotations
-import pytest
 from tay.draft.models import (
     LeagueSettings, DraftState, PlayerProjection,
     Recommendation, RecommendationState,
@@ -68,3 +67,42 @@ def test_recommendation_state_has_top_pick():
     )
     assert state.top_pick.player.name == 'A'
     assert state.positional_needs[0] == 'RB'
+
+
+def test_picks_until_next_odd_round_user_not_yet():
+    # Round 1, 12 teams, user at slot 6. current_pick=3 (pick_in_round=3).
+    # user_pick_in_round=6. 6 >= 3 → 6-3 = 3.
+    ls = LeagueSettings()
+    ds = DraftState(
+        season=2026, model_version='neural-v1', league_settings=ls,
+        current_pick=3, total_picks=180, user_pick_position=6,
+        drafted_ids=[], user_roster={'QB': [], 'RB': [], 'WR': [], 'TE': [], 'FLEX': []},
+    )
+    assert ds.picks_until_next == 3
+
+
+def test_picks_until_next_odd_round_user_already_picked():
+    # Round 1, 12 teams, user at slot 6. current_pick=7 (pick_in_round=7).
+    # User already picked at slot 6 in round 1.
+    # next_round=2 (even). next_user_pick = 12-6+1 = 7. picks_to_end = 12-7+1 = 6.
+    # result = 6 + 7 - 1 = 12. Overall pick: user next turns at round-2 slot 7 = pick 12+7 = 19. 19-7 = 12. ✓
+    ls = LeagueSettings()
+    ds = DraftState(
+        season=2026, model_version='neural-v1', league_settings=ls,
+        current_pick=7, total_picks=180, user_pick_position=6,
+        drafted_ids=[], user_roster={'QB': [], 'RB': [], 'WR': [], 'TE': [], 'FLEX': []},
+    )
+    assert ds.picks_until_next == 12
+
+
+def test_picks_until_next_even_round_user_picks_last():
+    # Round 2 (even), 12 teams, user at slot 1. In even rounds user picks last (slot 12).
+    # current_pick=13 (pick_in_round=1). user_pick_in_round = 12-1+1 = 12.
+    # 12 >= 1 → 12-1 = 11. User picks at round-2 slot 12 = pick 24. 24-13=11. ✓
+    ls = LeagueSettings()
+    ds = DraftState(
+        season=2026, model_version='neural-v1', league_settings=ls,
+        current_pick=13, total_picks=180, user_pick_position=1,
+        drafted_ids=[], user_roster={'QB': [], 'RB': [], 'WR': [], 'TE': [], 'FLEX': []},
+    )
+    assert ds.picks_until_next == 11
