@@ -11,6 +11,7 @@ QB_FEATURES: list[str] = [
     'pass_completion_pct', 'pass_yards_per_attempt',
     'roll2_fantasy_ppr',
     'lag2_fantasy_ppr', 'lag3_fantasy_ppr',
+    'ewma_fpts_proj17',
     'ewma_fantasy_ppr', 'ewma_pass_yards',
     'team_pass_rate', 'team_pass_epa', 'team_total_plays',
     'draft_pick_value',

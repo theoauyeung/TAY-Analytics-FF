@@ -18,6 +18,7 @@ def train_model(
     batch_size: int = 64,
 ) -> tuple[PositionMLP, list[float], float]:
     """Train a PositionMLP; return (model, per-epoch train losses, val RMSE)."""
+    torch.set_num_threads(1)  # single-threaded matmul → deterministic across processes
     model = PositionMLP(input_size=X_train.shape[1])
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=1e-4)
     criterion = nn.MSELoss()
