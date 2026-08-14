@@ -101,26 +101,27 @@ def write_projections(
                 exp      = float(X_raw[j, exp_idx])  if exp_idx  >= 0 else 99.0
                 pick_val = float(X_raw[j, pick_idx]) if pick_idx >= 0 else 0.0
 
-                # 1. Experience/potential discount: generic young QBs are discounted because
-                #    the model sees many busts in the training data. High draft picks (>=0.15
-                #    ~= top-50) carry more organizational conviction, so they get a smaller
-                #    penalty — this encodes potential, not injury correction.
-                is_high_pick = pick_val >= 0.15
-                if exp <= 1:
-                    samples[:, j] *= 0.83 if is_high_pick else 0.75
-                elif exp <= 3:
-                    samples[:, j] *= 0.88 if is_high_pick else 0.82
-                elif exp <= 5:
-                    samples[:, j] *= 0.94
-
-                # 2. Rushing talent: dual-threat QBs add real fantasy value the passing
-                #    model under-weights. A mild penalty for virtually non-rushing QBs
-                #    (pace-adjusted rush_score < 100) reflects their lower floor.
+                # 2. Rushing talent — compute first, used by step 1 and 3.
                 rush_yds     = float(X_raw[j, rush_yds_idx]) if rush_yds_idx >= 0 else 0.0
                 rush_tds     = float(X_raw[j, rush_tds_idx]) if rush_tds_idx >= 0 else 0.0
                 games_played = float(X_raw[j, games_idx])    if games_idx    >= 0 else 17.0
                 pace         = 17.0 / max(games_played, 5.0)
                 rush_score   = (rush_yds * pace) + (rush_tds * pace) * 80
+
+                # 1. Experience/potential discount: generic young QBs are discounted because
+                #    the model sees many busts in the training data. Skip this discount for
+                #    proven rushing QBs — their rushing ability is self-evident and the
+                #    experience penalty would cancel the rush bonus unfairly.
+                is_high_pick    = pick_val >= 0.15
+                is_proven_rusher = rush_score >= 300
+                if not is_proven_rusher:
+                    if exp <= 1:
+                        samples[:, j] *= 0.83 if is_high_pick else 0.75
+                    elif exp <= 3:
+                        samples[:, j] *= 0.88 if is_high_pick else 0.82
+                    elif exp <= 5:
+                        samples[:, j] *= 0.94
+
                 if rush_score < 100:
                     samples[:, j] *= 0.93   # virtually no rushing upside
                 elif rush_score >= 600:
