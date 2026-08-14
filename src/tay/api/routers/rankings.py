@@ -23,6 +23,7 @@ _RANKING_BASE = """
     LEFT JOIN adp a ON a.gsis_id = pr.gsis_id
                    AND a.season = pr.season
                    AND a.format = 'ppr'
+                   AND a.platform = 'fantasycalc'
                    AND a.adp NOT IN (999, 9999999)
     WHERE pr.season = ? AND pr.model_version = ?
       AND p.position IN ('QB', 'RB', 'WR', 'TE')
@@ -41,6 +42,17 @@ _SORT_COLS = {
 }
 
 
+_ADP_BLEND_WEIGHT = 0.3  # 70% VOR, 30% ADP consensus
+
+
+def _blended_score(vor_rank: int | None, adp: float | None) -> float:
+    """Combined score for default ranking: blends VOR with market ADP."""
+    vr = vor_rank if vor_rank is not None else 9999
+    if adp and adp < 900:
+        return (1 - _ADP_BLEND_WEIGHT) * vr + _ADP_BLEND_WEIGHT * adp
+    return float(vr)
+
+
 @router.get('/rankings', response_model=list[RankingOut])
 def get_rankings(
     season: int = Query(2026),
@@ -57,11 +69,21 @@ def get_rankings(
         params.append(position.upper())
     sql += f' ORDER BY {order_col}'
     rows = conn.execute(sql, params).fetchall()
+
     result = []
-    for i, row in enumerate(rows, 1):
+    for row in rows:
         d = dict(zip(_RANKING_KEYS, row))
+        result.append(d)
+
+    # Default sort: blend VOR rank with ADP consensus so QBs aren't overvalued
+    # relative to market. Pure VOR inflates QBs because scarcity weight is tuned
+    # for ranking quality, not absolute draft position.
+    if sort == 'vor_rank':
+        result.sort(key=lambda d: _blended_score(d.get('vor_rank'), d.get('adp')))
+
+    for i, d in enumerate(result, 1):
         d['rank'] = i
-        result.append(RankingOut(**d))
+        result[i - 1] = RankingOut(**d)
     return result
 
 
@@ -81,6 +103,7 @@ def get_tiers(
         LEFT JOIN adp a ON a.gsis_id = pr.gsis_id
                        AND a.season = pr.season
                        AND a.format = 'ppr'
+                       AND a.platform = 'fantasycalc'
                        AND a.adp NOT IN (999, 9999999)
         WHERE pr.season = ? AND pr.model_version = ?
           AND p.position = ?
