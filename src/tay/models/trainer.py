@@ -20,7 +20,7 @@ def train_model(
     """Train a PositionMLP; return (model, per-epoch train losses, val RMSE)."""
     torch.set_num_threads(1)  # single-threaded matmul → deterministic across processes
     model = PositionMLP(input_size=X_train.shape[1])
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=1e-4)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=5e-4)
     criterion = nn.MSELoss()
 
     loader = DataLoader(
