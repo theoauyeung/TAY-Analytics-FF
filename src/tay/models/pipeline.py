@@ -123,7 +123,7 @@ def write_projections(
                         samples[:, j] *= 0.94
 
                 if rush_score < 100:
-                    samples[:, j] *= 0.87   # no rushing upside: stronger penalty
+                    samples[:, j] *= 0.82   # no rushing upside: stronger penalty
                 elif rush_score >= 600:
                     samples[:, j] *= 1.18   # elite dual-threat
                 elif rush_score >= 400:
@@ -134,7 +134,7 @@ def write_projections(
                 # 3. Injury-season correction: when a QB played <11 games the model's
                 #    raw-volume inputs under-represent talent. Blend toward anchor from
                 #    lag2 PPR and per-game EWMA projection.
-                if games_played < 11 and lag2_idx >= 0 and ep17_idx >= 0:
+                if games_played < 15 and lag2_idx >= 0 and ep17_idx >= 0:
                     lag2   = float(X_raw[j, lag2_idx])
                     ep17   = float(X_raw[j, ep17_idx])
                     # For rushing QBs: weight lag2 (last healthy season) more heavily
