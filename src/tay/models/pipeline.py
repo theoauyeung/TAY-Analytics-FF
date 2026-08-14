@@ -137,7 +137,13 @@ def write_projections(
                 if games_played < 11 and lag2_idx >= 0 and ep17_idx >= 0:
                     lag2   = float(X_raw[j, lag2_idx])
                     ep17   = float(X_raw[j, ep17_idx])
-                    anchor = (lag2 + ep17) / 2.0
+                    # For rushing QBs: weight lag2 (last healthy season) more heavily
+                    # since their rushing ability is the persistent talent signal.
+                    # For pocket QBs: equal weight between lag2 and per-game EWMA.
+                    if rush_score >= 150:
+                        anchor = 0.7 * lag2 + 0.3 * ep17
+                    else:
+                        anchor = (lag2 + ep17) / 2.0
                     if anchor > 200:
                         model_out = float(samples[:, j].mean())
                         # Rushing QBs: trust the anchor more (injury obscures true talent)
