@@ -139,7 +139,12 @@ def write_projections(
                     anchor = (lag2 + ep17) / 2.0
                     if anchor > 200:
                         model_out = float(samples[:, j].mean())
-                        w_model   = 0.20 if games_played < 8 else 0.40
+                        # Rushing QBs: trust the anchor more (injury obscures true talent)
+                        # Pocket QBs: injury correction is also talent signal, blend lightly
+                        if rush_score >= 150:
+                            w_model = 0.10 if games_played < 8 else 0.25
+                        else:
+                            w_model = 0.20 if games_played < 8 else 0.40
                         target    = w_model * model_out + (1.0 - w_model) * anchor
                         factor    = min(target / max(model_out, 20.0), 2.5)
                         samples[:, j] *= factor
