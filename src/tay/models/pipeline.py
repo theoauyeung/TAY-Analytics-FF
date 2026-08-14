@@ -123,7 +123,7 @@ def write_projections(
                         samples[:, j] *= 0.94
 
                 if rush_score < 100:
-                    samples[:, j] *= 0.93   # virtually no rushing upside
+                    samples[:, j] *= 0.87   # no rushing upside: stronger penalty
                 elif rush_score >= 600:
                     samples[:, j] *= 1.18   # elite dual-threat
                 elif rush_score >= 400:
