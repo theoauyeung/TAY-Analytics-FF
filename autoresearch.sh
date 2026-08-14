@@ -12,4 +12,4 @@ EVAL_SCRIPT="$PROJ_DIR/experiments/eval_model.py"
 PYTHON=/Users/theoauyeung/miniforge3/bin/python3
 
 # Run evaluation (macOS lacks GNU timeout; rely on Python's own timeout guards)
-"$PYTHON" "$EVAL_SCRIPT" --seed "$SEED" --models-dir "$MODELS_DIR" --epochs 100
+"$PYTHON" "$EVAL_SCRIPT" --seed "$SEED" --models-dir "$MODELS_DIR" --epochs 150
