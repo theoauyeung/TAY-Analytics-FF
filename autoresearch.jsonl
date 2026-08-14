@@ -1,0 +1,2 @@
+{"type":"config","name":"qb-rankings","metricName":"primary","metricUnit":"pts+penalty","bestDirection":"lower","noiseFloor":1.0,"maxRuns":40,"maxSeconds":null,"targetMetric":null,"startedAt":1786718410}
+{"run":1,"commit":"1115afe","metric":80.44,"metrics":{"qb_mae":75.3,"rank_penalty":102.1,"daniels_rank":83,"dart_rank":115,"goff_rank":63},"status":"keep","description":"baseline: current code 100 epochs","timestamp":1786718464,"segment":0}
