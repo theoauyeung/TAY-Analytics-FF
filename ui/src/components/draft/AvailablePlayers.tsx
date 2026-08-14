@@ -5,6 +5,7 @@ import type { Position, PlayerDetail } from '../../types'
 import { useRankings } from '../../hooks/useRankings'
 import { useDraftState } from '../../hooks/useDraftState'
 import { PositionBadge } from '../ui/Badge'
+import { ADP_VALUE_THRESHOLD, ADP_OVERVALUED_THRESHOLD } from '../../lib/thresholds'
 
 const POSITION_FILTERS: Array<Position | 'ALL'> = ['ALL', 'QB', 'RB', 'WR', 'TE']
 
@@ -172,9 +173,9 @@ export function AvailablePlayers() {
                   <span
                     className={clsx(
                       'text-xs font-mono flex-shrink-0',
-                      adpDelta >= 5
+                      adpDelta <= ADP_VALUE_THRESHOLD
                         ? 'text-green-400'
-                        : adpDelta <= -5
+                        : adpDelta >= ADP_OVERVALUED_THRESHOLD
                         ? 'text-red-400'
                         : 'text-text-muted'
                     )}

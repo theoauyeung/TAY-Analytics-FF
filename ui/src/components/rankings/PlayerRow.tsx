@@ -2,6 +2,7 @@ import clsx from 'clsx'
 import type { Ranking, ColumnKey } from '../../types'
 import { PositionBadge, SignalBadge } from '../ui/Badge'
 import { StatCell } from '../ui/StatCell'
+import { ADP_VALUE_THRESHOLD, ADP_OVERVALUED_THRESHOLD } from '../../lib/thresholds'
 
 interface Props {
   ranking: Ranking
@@ -23,8 +24,8 @@ function fmtPct(v: number | null): string {
 export function PlayerRow({ ranking, visibleColumns, onClick, isDrafted = false }: Props) {
   const { player, vor, adpDelta } = ranking
 
-  const isUndervalued = adpDelta >= 5
-  const isOvervalued  = adpDelta <= -5
+  const isUndervalued = adpDelta <= ADP_VALUE_THRESHOLD
+  const isOvervalued  = adpDelta >= ADP_OVERVALUED_THRESHOLD
   const hasInjury     = player.injuryStatus !== null && player.injuryStatus !== 'healthy'
 
   return (
@@ -68,7 +69,7 @@ export function PlayerRow({ ranking, visibleColumns, onClick, isDrafted = false 
               {hasInjury && <SignalBadge signal="injury" label={player.injuryStatus ?? ''} />}
             </div>
             <div className="text-xs text-text-muted">
-              {player.team} · {player.experience === 0 ? 'Rookie' : `${player.experience}yr`}
+              {player.team}
             </div>
           </div>
         </div>
@@ -196,7 +197,7 @@ export function PlayerRow({ ranking, visibleColumns, onClick, isDrafted = false 
         <td className="py-2.5 px-3 text-right w-16 text-sm text-text-secondary">{fmtPct(ranking.modelConfidence)}</td>
       )}
       {visibleColumns.includes('adpDelta') && (
-        <td className={clsx('py-2.5 px-3 text-right w-16 text-sm font-medium', adpDelta >= 5 ? 'text-green-400' : adpDelta <= -5 ? 'text-red-400' : 'text-text-secondary')}>
+        <td className={clsx('py-2.5 px-3 text-right w-16 text-sm font-medium', adpDelta <= ADP_VALUE_THRESHOLD ? 'text-green-400' : adpDelta >= ADP_OVERVALUED_THRESHOLD ? 'text-red-400' : 'text-text-secondary')}>
           {adpDelta >= 0 ? '+' : ''}{adpDelta}
         </td>
       )}

@@ -21,7 +21,7 @@ export interface Ranking {
   vor: number                        // value over replacement
   adp: number                        // ESPN ADP
   modelRank: number
-  adpDelta: number                   // modelRank − ADP rank (positive = undervalued)
+  adpDelta: number                   // vor_rank − ADP (negative = model ranks higher = undervalued)
   replacementLevel: number
   // toggleable columns
   floor: number
@@ -45,7 +45,7 @@ export type ColumnKey =
 
 export const CORE_COLUMNS: ColumnKey[] = [
   'rank', 'player', 'position', 'team', 'bye',
-  'projection', 'vor', 'adp', 'modelRank', 'tier',
+  'projection', 'vor', 'adp', 'modelRank',
 ]
 
 export const OPTIONAL_COLUMNS: ColumnKey[] = [

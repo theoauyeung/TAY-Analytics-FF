@@ -3,6 +3,7 @@ import { useRankings } from '../hooks/useRankings'
 import { fetchScarcity } from '../api/rankings'
 import { TopValuesCard, PositionLeadersCard, ScarcityCard } from '../components/dashboard'
 import type { Ranking } from '../types'
+import { ADP_VALUE_THRESHOLD } from '../lib/thresholds'
 
 const DEFAULT_FILTERS = {
   position: 'ALL' as const,
@@ -23,7 +24,7 @@ export default function Dashboard() {
   })
 
   const topValues: Ranking[] = rankings
-    .filter(r => r.adpDelta < -5)
+    .filter(r => r.adpDelta <= ADP_VALUE_THRESHOLD)
     .sort((a, b) => a.adpDelta - b.adpDelta)
     .slice(0, 8)
 
