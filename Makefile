@@ -1,7 +1,7 @@
 PYTHON := /Users/theoauyeung/miniforge3/bin/python3.12
 RSCRIPT := $(shell which Rscript)
 
-.PHONY: install ingest features train valuations simulate draft api test clean
+.PHONY: install ingest features train valuations refresh simulate draft api test clean
 
 install:
 	$(PYTHON) -m pip install -e ".[dev]"
@@ -17,6 +17,9 @@ train:
 
 valuations:
 	$(PYTHON) scripts/compute_valuations.py
+
+refresh:
+	$(PYTHON) scripts/refresh_projections.py
 
 simulate:
 	$(PYTHON) scripts/run_simulation.py

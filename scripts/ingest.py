@@ -10,11 +10,10 @@ Steps:
     2. Pull NFLFastR play-by-play (R script)
     3. Load PBP into DuckDB
     4. Ingest nfl-data-py (players, rosters, draft picks)
-    5. Aggregate player/team season stats
-    6. Ingest Sleeper API (player IDs + ADP)
-    7. Ingest ESPN ADP
-    8. Ingest FantasyPros ADP
-    9. Scrape PFR combine data
+    5. Aggregate player + team season stats
+    6. Ingest Sleeper API (player IDs only)
+    7. Ingest FantasyCalc consensus ADP (all positions, no auth required)
+    8. Scrape PFR combine data
 """
 import argparse
 import sys
@@ -30,10 +29,9 @@ from tay.ingestion import (
     nfl_data_py_ingest,
     aggregate_stats,
     sleeper,
-    espn,
-    fantasypros,
     pfr,
 )
+from tay.ingestion import fantasycalc
 
 
 def parse_args():
@@ -75,17 +73,14 @@ def main():
     step("5. Aggregate player + team season stats")
     aggregate_stats.ingest(start=args.start, end=args.end)
 
-    step("6. Sleeper API (player IDs + ADP)")
+    step("6. Sleeper API (player ID mapping)")
     sleeper.ingest(season=args.adp_season)
 
-    step("7. ESPN ADP")
-    espn.ingest(season=args.adp_season)
-
-    step("8. FantasyPros ADP")
-    fantasypros.ingest(season=args.adp_season)
+    step("7. FantasyCalc consensus ADP (all positions)")
+    fantasycalc.ingest(season=args.adp_season)
 
     if not args.skip_pfr:
-        step("9. PFR combine data")
+        step("8. PFR combine data")
         pfr.ingest(start=args.start, end=args.end)
 
     elapsed = time.time() - start
