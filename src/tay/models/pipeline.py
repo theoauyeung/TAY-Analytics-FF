@@ -87,6 +87,63 @@ def write_projections(
 
         samples = _mc_predict(model, X_norm)  # (50, n_players)
 
+        # QB-only inference adjustments applied in order:
+        if pos == 'QB':
+            exp_idx       = feature_names.index('experience')        if 'experience'        in feature_names else -1
+            games_idx     = feature_names.index('prev_games')        if 'prev_games'        in feature_names else -1
+            rush_yds_idx  = feature_names.index('prev_rush_yards')   if 'prev_rush_yards'   in feature_names else -1
+            rush_tds_idx  = feature_names.index('prev_rush_tds')     if 'prev_rush_tds'     in feature_names else -1
+            pick_idx      = feature_names.index('draft_pick_value')  if 'draft_pick_value'  in feature_names else -1
+            lag2_idx      = feature_names.index('lag2_fantasy_ppr')  if 'lag2_fantasy_ppr'  in feature_names else -1
+            ep17_idx      = feature_names.index('ewma_fpts_proj17')  if 'ewma_fpts_proj17'  in feature_names else -1
+
+            for j in range(len(gsis_ids)):
+                exp      = float(X_raw[j, exp_idx])  if exp_idx  >= 0 else 99.0
+                pick_val = float(X_raw[j, pick_idx]) if pick_idx >= 0 else 0.0
+
+                # 1. Experience/potential discount: generic young QBs are discounted because
+                #    the model sees many busts in the training data. High draft picks (>=0.15
+                #    ~= top-50) carry more organizational conviction, so they get a smaller
+                #    penalty — this encodes potential, not injury correction.
+                is_high_pick = pick_val >= 0.15
+                if exp <= 1:
+                    samples[:, j] *= 0.83 if is_high_pick else 0.75
+                elif exp <= 3:
+                    samples[:, j] *= 0.88 if is_high_pick else 0.82
+                elif exp <= 5:
+                    samples[:, j] *= 0.94
+
+                # 2. Rushing talent: dual-threat QBs add real fantasy value the passing
+                #    model under-weights. A mild penalty for virtually non-rushing QBs
+                #    (pace-adjusted rush_score < 100) reflects their lower floor.
+                rush_yds     = float(X_raw[j, rush_yds_idx]) if rush_yds_idx >= 0 else 0.0
+                rush_tds     = float(X_raw[j, rush_tds_idx]) if rush_tds_idx >= 0 else 0.0
+                games_played = float(X_raw[j, games_idx])    if games_idx    >= 0 else 17.0
+                pace         = 17.0 / max(games_played, 5.0)
+                rush_score   = (rush_yds * pace) + (rush_tds * pace) * 80
+                if rush_score < 100:
+                    samples[:, j] *= 0.93   # virtually no rushing upside
+                elif rush_score >= 600:
+                    samples[:, j] *= 1.18   # elite dual-threat
+                elif rush_score >= 400:
+                    samples[:, j] *= 1.10   # solid rusher
+                elif rush_score >= 200:
+                    samples[:, j] *= 1.05   # occasional rusher
+
+                # 3. Injury-season correction: when a QB played <11 games the model's
+                #    raw-volume inputs under-represent talent. Blend toward anchor from
+                #    lag2 PPR and per-game EWMA projection.
+                if games_played < 11 and lag2_idx >= 0 and ep17_idx >= 0:
+                    lag2   = float(X_raw[j, lag2_idx])
+                    ep17   = float(X_raw[j, ep17_idx])
+                    anchor = (lag2 + ep17) / 2.0
+                    if anchor > 200:
+                        model_out = float(samples[:, j].mean())
+                        w_model   = 0.20 if games_played < 8 else 0.40
+                        target    = w_model * model_out + (1.0 - w_model) * anchor
+                        factor    = min(target / max(model_out, 20.0), 2.5)
+                        samples[:, j] *= factor
+
         for j, gsis_id in enumerate(gsis_ids):
             s = np.maximum(samples[:, j], 0.0)
             mean_proj = float(s.mean())
