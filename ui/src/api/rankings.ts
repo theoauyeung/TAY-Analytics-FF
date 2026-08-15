@@ -120,7 +120,7 @@ export async function fetchRankings(filters: RankingFilters): Promise<Ranking[]>
   const params = new URLSearchParams({
     season: String(SEASON),
     model_version: MODEL_VERSION,
-    sort: 'adp',
+    sort: 'vor_rank',
   })
   if (filters.position !== 'ALL') params.set('position', filters.position)
   const data = await apiFetch<BackendRanking[]>(`/rankings?${params}`)
