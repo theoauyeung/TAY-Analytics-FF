@@ -4,6 +4,7 @@ import { apiFetch, SEASON, MODEL_VERSION } from './client'
 interface BackendRanking {
   rank: number
   gsis_id: string
+  espn_id: string | null
   name: string
   position: string
   team: string | null
@@ -50,7 +51,9 @@ export function toRanking(r: BackendRanking, positionRank: number): Ranking {
     byeWeek: 0,
     age: 0,
     experience: 0,
-    imageUrl: null,
+    imageUrl: r.espn_id
+      ? `https://a.espncdn.com/i/headshots/nfl/players/full/${r.espn_id}.png`
+      : null,
     injuryStatus: null,
     injuryNote: null,
     projection: {
@@ -122,7 +125,7 @@ export async function fetchRankings(filters: RankingFilters): Promise<Ranking[]>
   const params = new URLSearchParams({
     season: String(SEASON),
     model_version: MODEL_VERSION,
-    sort: 'vor_rank',
+    sort: 'adp',
   })
   if (filters.position !== 'ALL') params.set('position', filters.position)
   const data = await apiFetch<BackendRanking[]>(`/rankings?${params}`)

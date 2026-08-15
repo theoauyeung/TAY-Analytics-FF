@@ -13,7 +13,7 @@ router = APIRouter(tags=['rankings'])
 _REPLACEMENT_SPOTS = {'QB': 12, 'RB': 30, 'WR': 30, 'TE': 12}
 
 _RANKING_BASE = """
-    SELECT pr.gsis_id, p.name, p.position, p.team,
+    SELECT pr.gsis_id, p.espn_id, p.name, p.position, p.team,
            pr.vor, pr.vor_rank, COALESCE(a.adp, 999.0) AS adp,
            pr.adp_delta, pr.tier, pr.mean_projection,
            pr.sim_mean, pr.sim_p10, pr.sim_p90,
@@ -30,7 +30,7 @@ _RANKING_BASE = """
 """
 
 _RANKING_KEYS = [
-    'gsis_id', 'name', 'position', 'team', 'vor', 'vor_rank', 'adp',
+    'gsis_id', 'espn_id', 'name', 'position', 'team', 'vor', 'vor_rank', 'adp',
     'adp_delta', 'tier', 'mean_projection', 'sim_mean', 'sim_p10', 'sim_p90',
     'sim_boom_prob', 'sim_bust_prob', 'avail_mean',
 ]

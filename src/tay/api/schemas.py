@@ -31,6 +31,7 @@ class PlayerOut(BaseModel):
 class RankingOut(BaseModel):
     rank: int
     gsis_id: str
+    espn_id: str | None
     name: str
     position: str
     team: str | None
