@@ -8,11 +8,6 @@ export function DraftBoard() {
   // Build a map from overallPick → DraftedPick
   const pickMap = new Map(state.picks.map(p => [p.overallPick, p]))
 
-  // User's column for each round (1-indexed slot within the round)
-  function userSlotInRound(round: number): number {
-    return round % 2 === 1 ? userPickPosition : teams - userPickPosition + 1
-  }
-
   return (
     <div className="overflow-auto">
       <table className="text-xs border-collapse min-w-full">
@@ -29,15 +24,18 @@ export function DraftBoard() {
         <tbody>
           {Array.from({ length: totalRounds }, (_, ri) => {
             const round = ri + 1
-            const userSlot = userSlotInRound(round)
             return (
               <tr key={round} className="border-t border-border/30">
                 <td className="text-text-muted px-2 py-1.5 font-medium">{round}</td>
                 {Array.from({ length: teams }, (_, si) => {
                   const slot = si + 1
-                  const overall = (round - 1) * teams + slot
+                  // Snake draft: odd rounds L→R, even rounds R→L
+                  // Columns represent team positions, so T{userPickPosition} is always the user's column
+                  const overall = round % 2 === 1
+                    ? (round - 1) * teams + slot
+                    : round * teams - slot + 1
                   const pick = pickMap.get(overall)
-                  const isUserSlot = slot === userSlot
+                  const isUserSlot = slot === userPickPosition
                   return (
                     <td
                       key={slot}

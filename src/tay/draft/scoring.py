@@ -4,6 +4,7 @@ from tay.draft.models import DraftState, PlayerProjection, Recommendation
 
 _FLEX_ELIGIBLE = {'RB', 'WR', 'TE'}
 _STARTER_REQUIREMENTS = {'QB': 1, 'RB': 2, 'WR': 2, 'TE': 1}
+_FLEX_SPOTS = 1  # extra RB/WR/TE slot before position is truly "covered"
 
 
 def future_availability(player: PlayerProjection, current_pick: int, picks_until_next: int) -> float:
@@ -40,16 +41,24 @@ def roster_fit(
     requirements = roster_config if roster_config is not None else _STARTER_REQUIREMENTS
     filled = len(user_roster.get(pos, []))
     required = requirements.get(pos, 1)
-    flex_filled = len(user_roster.get('FLEX', []))
 
     score = 1.0
     if filled == 0:
         score += 0.2   # bonus: unfilled starter slot at this position
-    elif filled >= required:
-        score -= 0.3   # penalty: position already covered
-
-    if pos in _FLEX_ELIGIBLE and flex_filled == 0:
-        score += 0.1   # flex slot still open
+    elif pos in _FLEX_ELIGIBLE:
+        # For flex-eligible positions, don't penalize until starters + flex are covered.
+        # Count total RB+WR+TE drafted; only apply penalty when the combined pool
+        # exceeds the required starters across all flex positions plus the flex spot.
+        total_skill_filled = sum(len(user_roster.get(p, [])) for p in _FLEX_ELIGIBLE)
+        total_skill_required = sum(
+            requirements.get(p, 0) for p in _FLEX_ELIGIBLE
+        ) + _FLEX_SPOTS
+        if filled >= required and total_skill_filled >= total_skill_required:
+            score -= 0.3   # starter + flex both covered — truly redundant
+        # else: starters covered but flex still open, no penalty
+    else:
+        if filled >= required:
+            score -= 0.3   # penalty: position already covered
 
     return max(0.5, min(1.2, score))
 
@@ -72,6 +81,20 @@ def score_player(
     base_value = player.vor
     # Urgency multiplier: low fa (player likely gone at next pick) → 1.5x; high fa (can wait) → 1.0x
     draft_score = (base_value * rf * (1.0 + pu)) * (1.5 - 0.5 * fa)
+
+    # QB patience: there are always enough draftable QBs for every team.
+    # Suppress QB recommendations until the user has built a skill position core
+    # or we're deep enough that QB pool genuinely starts thinning.
+    if player.position == 'QB' and len(state.user_roster.get('QB', [])) == 0:
+        user_skill_count = (
+            len(state.user_roster.get('RB', []))
+            + len(state.user_roster.get('WR', []))
+            + len(state.user_roster.get('TE', []))
+        )
+        teams = state.league_settings.teams
+        # Don't recommend QB until user has 4 skill players OR past round 7
+        if user_skill_count < 4 and state.current_pick <= teams * 7:
+            draft_score *= 0.5
 
     explanation: list[str] = []
     if player.vor > 20:

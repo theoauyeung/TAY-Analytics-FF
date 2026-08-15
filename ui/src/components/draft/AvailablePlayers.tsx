@@ -42,6 +42,7 @@ export function AvailablePlayers() {
           r.player.team.toLowerCase().includes(q)
         )
       })
+      .sort((a, b) => (a.adp ?? 999) - (b.adp ?? 999))
   }, [rankings, availableIds, posFilter, search])
 
   // Dismiss pending on Escape
