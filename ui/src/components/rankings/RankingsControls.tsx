@@ -13,9 +13,7 @@ const FORMATS = [
   { value: 'standard', label: 'Standard' },
 ] as const
 const DRAFT_TYPES = [
-  { value: 'redraft',   label: 'Redraft' },
-  { value: 'best_ball', label: 'Best Ball' },
-  { value: 'dynasty',   label: 'Dynasty' },
+  { value: 'redraft', label: 'Redraft' },
 ] as const
 
 function SegmentedControl<T extends string>({

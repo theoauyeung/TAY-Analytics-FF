@@ -1,4 +1,4 @@
-import { createContext, useContext, useReducer, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useReducer, type ReactNode } from 'react'
 import type { DraftConfig, DraftedPick, LiveDraftState } from '../types'
 
 const DEFAULT_DRAFT_CONFIG: DraftConfig = {
@@ -119,14 +119,34 @@ export function useDraftContext(): DraftContextValue {
 
 // ─── Provider ─────────────────────────────────────────────────────────────
 
+const DRAFT_STORAGE_KEY = 'tay-draft-state'
+
 const INITIAL_STATE: LiveDraftState = {
   config: DEFAULT_DRAFT_CONFIG,
   picks: [],
   currentOverallPick: 1,
 }
 
+function loadPersistedState(): LiveDraftState {
+  try {
+    const raw = localStorage.getItem(DRAFT_STORAGE_KEY)
+    if (!raw) return INITIAL_STATE
+    const parsed = JSON.parse(raw) as LiveDraftState
+    if (!parsed.config || !Array.isArray(parsed.picks)) return INITIAL_STATE
+    return parsed
+  } catch {
+    return INITIAL_STATE
+  }
+}
+
 export function DraftProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(draftReducer, INITIAL_STATE)
+  const [state, dispatch] = useReducer(draftReducer, undefined, loadPersistedState)
+
+  // Persist every state change to localStorage
+  useEffect(() => {
+    localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(state))
+  }, [state])
+
   return (
     <DraftContext.Provider value={{ state, dispatch }}>
       {children}

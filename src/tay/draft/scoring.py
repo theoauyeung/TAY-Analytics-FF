@@ -6,11 +6,18 @@ _FLEX_ELIGIBLE = {'RB', 'WR', 'TE'}
 _STARTER_REQUIREMENTS = {'QB': 1, 'RB': 2, 'WR': 2, 'TE': 1}
 
 
-def future_availability(player: PlayerProjection, picks_until_next: int) -> float:
-    """P(player still available at next pick) based on ADP vs picks remaining."""
-    adp_std = max(1.0, player.adp * 0.3)
-    adp_z = picks_until_next / adp_std
-    return max(0.0, min(1.0, 1.0 - adp_z))
+def future_availability(player: PlayerProjection, current_pick: int, picks_until_next: int) -> float:
+    """P(player still available at user's next pick). High = can wait, Low = must take now."""
+    next_pick = current_pick + picks_until_next
+    adp = player.adp
+    if adp <= 0 or adp >= 500:
+        return 1.0
+    adp_std = max(2.0, adp * 0.25)
+    # z > 0: next_pick > ADP → player likely gone before next pick
+    # z < 0: next_pick < ADP → player will still be available
+    z = (next_pick - adp) / adp_std
+    # Linear: z=-2 → fa≈1.0, z=0 → fa=0.5, z=2 → fa≈0.0
+    return max(0.0, min(1.0, 0.5 - 0.25 * z))
 
 
 def positional_urgency(
@@ -54,7 +61,7 @@ def score_player(
     replacement_spots: dict[str, int],
 ) -> Recommendation:
     """Compute Draft Score and build explanation for one player."""
-    fa = future_availability(player, state.picks_until_next)
+    fa = future_availability(player, state.current_pick, state.picks_until_next)
     pu = positional_urgency(
         player.position,
         available_by_position.get(player.position, 30),
@@ -63,7 +70,8 @@ def score_player(
     rf = roster_fit(player, state.user_roster, state.league_settings.roster_config)
 
     base_value = player.vor
-    draft_score = (base_value * rf * (1.0 + pu)) * (0.5 + 0.5 * fa)
+    # Urgency multiplier: low fa (player likely gone at next pick) → 1.5x; high fa (can wait) → 1.0x
+    draft_score = (base_value * rf * (1.0 + pu)) * (1.5 - 0.5 * fa)
 
     explanation: list[str] = []
     if player.vor > 20:
