@@ -87,7 +87,7 @@ def write_projections(
 
         samples = _mc_predict(model, X_norm)  # (50, n_players)
 
-        # QB-only inference adjustments applied in order:
+        # Position-specific post-hoc inference adjustments:
         if pos == 'QB':
             exp_idx       = feature_names.index('experience')        if 'experience'        in feature_names else -1
             games_idx     = feature_names.index('prev_games')        if 'prev_games'        in feature_names else -1
@@ -155,6 +155,102 @@ def write_projections(
                         target    = w_model * model_out + (1.0 - w_model) * anchor
                         factor    = min(target / max(model_out, 20.0), 2.5)
                         samples[:, j] *= factor
+
+        if pos == 'RB':
+            games_idx = feature_names.index('prev_games')       if 'prev_games'       in feature_names else -1
+            ewma_idx  = feature_names.index('ewma_fantasy_ppr') if 'ewma_fantasy_ppr' in feature_names else -1
+            lag2_idx  = feature_names.index('lag2_fantasy_ppr') if 'lag2_fantasy_ppr' in feature_names else -1
+            exp_idx   = feature_names.index('experience')       if 'experience'       in feature_names else -1
+
+            for j in range(len(gsis_ids)):
+                games = float(X_raw[j, games_idx]) if games_idx >= 0 else 17.0
+                ewma  = float(X_raw[j, ewma_idx])  if ewma_idx  >= 0 else 0.0
+                lag2  = float(X_raw[j, lag2_idx])  if lag2_idx  >= 0 else 0.0
+                exp   = float(X_raw[j, exp_idx])   if exp_idx   >= 0 else 99.0
+
+                # Injury correction: missed games → raw volume stats under-represent talent
+                if games < 14 and ewma > 150:
+                    model_out = float(samples[:, j].mean())
+                    anchor = 0.55 * lag2 + 0.45 * ewma if lag2 > 100 else ewma
+                    if anchor > model_out:
+                        w_model = 0.25 if games < 10 else 0.35
+                        target  = w_model * model_out + (1.0 - w_model) * anchor
+                        samples[:, j] *= min(target / max(model_out, 20.0), 1.8)
+
+                # Bounce-back correction: large single-year drop for an established back
+                # (coaching change, early injury, role change) — blend toward prior level.
+                # Guard: exp < 9 avoids boosting aging backs in genuine decline.
+                elif ewma > 200 and exp < 9:
+                    model_out = float(samples[:, j].mean())
+                    if model_out < ewma * 0.82:
+                        anchor = 0.40 * lag2 + 0.60 * ewma if lag2 > 100 else ewma
+                        if anchor > model_out:
+                            w_model = 0.50 if exp < 4 else 0.40
+                            target  = w_model * model_out + (1.0 - w_model) * anchor
+                            samples[:, j] *= min(target / max(model_out, 20.0), 1.4)
+
+        if pos == 'WR':
+            games_idx = feature_names.index('prev_games')       if 'prev_games'       in feature_names else -1
+            ewma_idx  = feature_names.index('ewma_fantasy_ppr') if 'ewma_fantasy_ppr' in feature_names else -1
+            lag2_idx  = feature_names.index('lag2_fantasy_ppr') if 'lag2_fantasy_ppr' in feature_names else -1
+            prev_idx  = feature_names.index('prev_fantasy_ppr') if 'prev_fantasy_ppr' in feature_names else -1
+            exp_idx   = feature_names.index('experience')       if 'experience'       in feature_names else -1
+
+            for j in range(len(gsis_ids)):
+                games = float(X_raw[j, games_idx]) if games_idx >= 0 else 17.0
+                ewma  = float(X_raw[j, ewma_idx])  if ewma_idx  >= 0 else 0.0
+                lag2  = float(X_raw[j, lag2_idx])  if lag2_idx  >= 0 else 0.0
+                prev  = float(X_raw[j, prev_idx])  if prev_idx  >= 0 else 0.0
+                exp   = float(X_raw[j, exp_idx])   if exp_idx   >= 0 else 99.0
+
+                # Injury correction: fewer than 14 games → volume under-represents talent
+                if games < 14 and ewma > 150:
+                    model_out = float(samples[:, j].mean())
+                    anchor = 0.50 * ewma + 0.50 * lag2 if lag2 > 100 else ewma
+                    if anchor > model_out:
+                        w_model = 0.25 if games < 10 else 0.35
+                        target  = w_model * model_out + (1.0 - w_model) * anchor
+                        samples[:, j] *= min(target / max(model_out, 20.0), 1.8)
+
+                # Down-year correction for proven veterans: prev year significantly below
+                # their established level signals transient causes, not true decline.
+                elif prev < lag2 * 0.72 and lag2 > 250 and ewma < lag2 * 0.90 and exp >= 4:
+                    model_out = float(samples[:, j].mean())
+                    anchor    = 0.55 * lag2 + 0.45 * ewma
+                    if anchor > model_out:
+                        target = 0.35 * model_out + 0.65 * anchor
+                        samples[:, j] *= min(target / max(model_out, 20.0), 1.5)
+
+                # Recency dampener: young WR with a large single-year breakout from a
+                # low base has elevated regression risk. lag2 < 250 guards against
+                # penalising players with a solid multi-year foundation (e.g. JSN).
+                if exp <= 3 and lag2 > 50 and lag2 < 250 and prev > 0 and prev / lag2 > 1.7:
+                    samples[:, j] *= 0.86
+
+        if pos == 'TE':
+            games_idx = feature_names.index('prev_games')       if 'prev_games'       in feature_names else -1
+            ewma_idx  = feature_names.index('ewma_fantasy_ppr') if 'ewma_fantasy_ppr' in feature_names else -1
+            lag2_idx  = feature_names.index('lag2_fantasy_ppr') if 'lag2_fantasy_ppr' in feature_names else -1
+            prev_idx  = feature_names.index('prev_fantasy_ppr') if 'prev_fantasy_ppr' in feature_names else -1
+
+            for j in range(len(gsis_ids)):
+                games = float(X_raw[j, games_idx]) if games_idx >= 0 else 17.0
+                ewma  = float(X_raw[j, ewma_idx])  if ewma_idx  >= 0 else 0.0
+                lag2  = float(X_raw[j, lag2_idx])  if lag2_idx  >= 0 else 0.0
+                prev  = float(X_raw[j, prev_idx])  if prev_idx  >= 0 else 0.0
+
+                # Injury correction with pace adjustment: a TE who missed significant
+                # games has much higher per-game production than raw totals show.
+                if games < 14 and ewma > 80:
+                    pace      = 17.0 / max(games, 4.0)
+                    adj_prev  = min(prev * pace, prev * 1.6)
+                    anchor    = 0.55 * adj_prev + 0.45 * ewma if lag2 > 50 \
+                                else 0.50 * adj_prev + 0.50 * ewma
+                    model_out = float(samples[:, j].mean())
+                    if anchor > model_out:
+                        w_model = 0.25 if games < 10 else 0.40
+                        target  = w_model * model_out + (1.0 - w_model) * anchor
+                        samples[:, j] *= min(target / max(model_out, 20.0), 1.8)
 
         for j, gsis_id in enumerate(gsis_ids):
             s = np.maximum(samples[:, j], 0.0)
