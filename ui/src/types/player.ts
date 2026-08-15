@@ -13,8 +13,6 @@ export interface Projection {
   p75: number
   p90: number
   stdDev: number
-  boomProbability: number   // 0–1
-  bustProbability: number   // 0–1
   gamesPlayed: number
 }
 
@@ -58,8 +56,6 @@ export interface PlayerDetail extends Player {
   opportunity: OpportunityMetrics
   efficiency: EfficiencyMetrics
   modelConfidence: number           // 0–1
-  breakoutProbability: number       // 0–1
-  bustRisk: number                  // 0–1
   rookieYear: boolean
   collegeTeam: string | null
   depthChartPosition: number        // 1 = starter, 2 = backup, etc.

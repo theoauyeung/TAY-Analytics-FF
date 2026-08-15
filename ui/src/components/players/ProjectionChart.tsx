@@ -55,18 +55,6 @@ export function ProjectionChart({ player }: Props) {
           <div className="text-sm font-medium text-text-primary">{Math.round(player.projection.floor)}</div>
         </div>
         <div className="text-center">
-          <div className="text-xs text-text-muted">Boom%</div>
-          <div className="text-sm font-medium text-text-primary">
-            {Math.round(player.projection.boomProbability * 100)}%
-          </div>
-        </div>
-        <div className="text-center">
-          <div className="text-xs text-text-muted">Bust%</div>
-          <div className="text-sm font-medium text-text-primary">
-            {Math.round(player.projection.bustProbability * 100)}%
-          </div>
-        </div>
-        <div className="text-center">
           <div className="text-xs text-text-muted">Ceiling</div>
           <div className="text-sm font-medium text-text-primary">{Math.round(player.projection.ceiling)}</div>
         </div>

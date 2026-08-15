@@ -16,8 +16,6 @@ interface BackendPlayerProjection {
   sim_p90: number
   adp: number
   tier: number | null
-  sim_boom_prob: number
-  sim_bust_prob: number
 }
 
 interface BackendRecommendation {
@@ -73,8 +71,6 @@ function toPlayerDetailFromProjection(p: BackendPlayerProjection): PlayerDetail 
       p75: 0,
       p90: p.sim_p90,
       stdDev: 0,
-      boomProbability: p.sim_boom_prob,
-      bustProbability: p.sim_bust_prob,
       gamesPlayed: 17,
     },
     opportunity: {
@@ -98,8 +94,6 @@ function toPlayerDetailFromProjection(p: BackendPlayerProjection): PlayerDetail 
       yardsPerAttempt: null,
     },
     modelConfidence: 0,
-    breakoutProbability: p.sim_boom_prob,
-    bustRisk: p.sim_bust_prob,
     rookieYear: false,
     collegeTeam: null,
     depthChartPosition: 1,

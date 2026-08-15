@@ -110,20 +110,7 @@ export function PlayerDrawer({ playerId, onClose }: Props) {
                 </div>
               </div>
 
-              {/* Boom/bust */}
-              <div className="mt-3 flex gap-3">
-                <div className="flex-1 bg-green-900/20 border border-green-800/40 rounded-lg p-2.5 text-center">
-                  <div className="text-xs text-text-muted">Boom</div>
-                  <div className="text-sm font-bold text-green-400">
-                    {(player.projection.boomProbability * 100).toFixed(0)}%
-                  </div>
-                </div>
-                <div className="flex-1 bg-red-900/20 border border-red-800/40 rounded-lg p-2.5 text-center">
-                  <div className="text-xs text-text-muted">Bust</div>
-                  <div className="text-sm font-bold text-red-400">
-                    {(player.projection.bustProbability * 100).toFixed(0)}%
-                  </div>
-                </div>
+              <div className="mt-3">
                 <div className="flex-1 bg-bg-elevated border border-border rounded-lg p-2.5 text-center">
                   <div className="text-xs text-text-muted">GP</div>
                   <div className="text-sm font-bold text-text-primary">
@@ -177,9 +164,7 @@ export function PlayerDrawer({ playerId, onClose }: Props) {
               <div className="bg-bg-elevated rounded-lg p-3 space-y-1.5 text-xs text-text-secondary">
                 <p>This player projects as a strong value relative to current ADP. The model weights their elevated target share and elite route participation as primary upside drivers. Confidence is high given stable team situation and consistent usage patterns.</p>
                 <p className="text-text-muted pt-1">
-                  Confidence: {(player.modelConfidence * 100).toFixed(0)}% ·
-                  Breakout: {(player.breakoutProbability * 100).toFixed(0)}% ·
-                  Bust risk: {(player.bustRisk * 100).toFixed(0)}%
+                  Confidence: {(player.modelConfidence * 100).toFixed(0)}%
                 </p>
               </div>
             </>

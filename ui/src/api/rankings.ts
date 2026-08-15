@@ -17,8 +17,7 @@ interface BackendRanking {
   sim_mean: number | null
   sim_p10: number | null
   sim_p90: number | null
-  sim_boom_prob: number | null
-  sim_bust_prob: number | null
+
   avail_mean: number | null
 }
 
@@ -66,8 +65,6 @@ export function toRanking(r: BackendRanking, positionRank: number): Ranking {
       p75: 0,
       p90: r.sim_p90 ?? 0,
       stdDev: 0,
-      boomProbability: r.sim_boom_prob ?? 0,
-      bustProbability: r.sim_bust_prob ?? 0,
       gamesPlayed: 17,
     },
     opportunity: {
@@ -91,8 +88,6 @@ export function toRanking(r: BackendRanking, positionRank: number): Ranking {
       yardsPerAttempt: null,
     },
     modelConfidence: r.avail_mean ?? 0,
-    breakoutProbability: r.sim_boom_prob ?? 0,
-    bustRisk: r.sim_bust_prob ?? 0,
     rookieYear: false,
     collegeTeam: null,
     depthChartPosition: 1,

@@ -17,8 +17,6 @@ interface BackendPlayer {
   sim_mean: number | null
   sim_p10: number | null
   sim_p90: number | null
-  sim_boom_prob: number | null
-  sim_bust_prob: number | null
   avail_mean: number | null
 }
 
@@ -44,8 +42,6 @@ function toPlayerDetail(p: BackendPlayer): PlayerDetail {
       p75: 0,
       p90: p.sim_p90 ?? 0,
       stdDev: 0,
-      boomProbability: p.sim_boom_prob ?? 0,
-      bustProbability: p.sim_bust_prob ?? 0,
       gamesPlayed: 17,
     },
     opportunity: {
@@ -69,8 +65,6 @@ function toPlayerDetail(p: BackendPlayer): PlayerDetail {
       yardsPerAttempt: null,
     },
     modelConfidence: p.avail_mean ?? 0,
-    breakoutProbability: p.sim_boom_prob ?? 0,
-    bustRisk: p.sim_bust_prob ?? 0,
     rookieYear: false,
     collegeTeam: null,
     depthChartPosition: 1,

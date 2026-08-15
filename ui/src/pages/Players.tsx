@@ -111,8 +111,6 @@ export default function Players() {
           <div className="grid grid-cols-3 gap-3">
             {[
               { label: 'Model Confidence', value: `${Math.round(selectedRanking.player.modelConfidence * 100)}%` },
-              { label: 'Breakout Prob', value: `${Math.round(selectedRanking.player.breakoutProbability * 100)}%` },
-              { label: 'Bust Risk', value: `${Math.round(selectedRanking.player.bustRisk * 100)}%` },
               { label: 'ADP', value: selectedRanking.adp },
               { label: 'Model Rank', value: selectedRanking.modelRank },
               { label: 'ADP Delta', value: selectedRanking.adpDelta < 0 ? `+${Math.abs(selectedRanking.adpDelta)}` : `${selectedRanking.adpDelta}` },
