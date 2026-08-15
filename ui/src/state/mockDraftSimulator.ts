@@ -7,23 +7,19 @@ import { getPickingTeam } from './draftState'
 // Max times a team will draft each position in a 13-round snake draft
 const POS_LIMITS: Record<string, number> = { QB: 2, RB: 5, WR: 5, TE: 2 }
 
-// Round threshold before an opponent will draft their first QB
-const QB_FIRST_ROUND_MIN = 6
-
 /**
  * Simulate an opponent's pick using positional need.
  *
  * Strategy:
  * 1. Count how many of each position the picking team already has.
- * 2. Block positions that are at their cap.
- * 3. Suppress QB until round 6+ (mirrors real draft behaviour).
- * 4. From the filtered pool, take the highest-ADP player.
+ * 2. Block positions that are at their cap (e.g. don't draft a 3rd QB).
+ * 3. Don't draft a second QB until the team has at least 2 RBs and 2 WRs.
+ * 4. From the filtered pool, take the lowest-ADP (highest consensus value) player.
  */
 export function bestAvailablePlayer(
   draftedIds: string[],
   rankings: Ranking[],
   teamRoster: Record<string, number>,  // position → count already drafted by this team
-  currentRound: number,
 ): PlayerDetail | null {
   const draftedSet = new Set(draftedIds)
 
@@ -37,8 +33,12 @@ export function bestAvailablePlayer(
 
     if (count >= limit) return false
 
-    // Don't let opponent grab their first QB before round QB_FIRST_ROUND_MIN
-    if (pos === 'QB' && count === 0 && currentRound < QB_FIRST_ROUND_MIN) return false
+    // Don't draft a second QB until the team has their core skill positions (2 RB + 2 WR)
+    if (pos === 'QB' && count >= 1) {
+      const rbs = teamRoster['RB'] ?? 0
+      const wrs = teamRoster['WR'] ?? 0
+      if (rbs < 2 || wrs < 2) return false
+    }
 
     return true
   })
@@ -78,7 +78,6 @@ export function useAutoAdvance() {
     const { teams } = config
 
     const pickingTeam = getPickingTeam(currentOverallPick, teams)
-    const currentRound = Math.ceil(currentOverallPick / teams)
 
     // Build this team's current roster from prior picks
     const teamRoster: Record<string, number> = {}
@@ -90,7 +89,7 @@ export function useAutoAdvance() {
     }
 
     const draftedIds = picks.map(p => p.player.id)
-    const pick = bestAvailablePlayer(draftedIds, rankings, teamRoster, currentRound)
+    const pick = bestAvailablePlayer(draftedIds, rankings, teamRoster)
 
     if (!pick) {
       setAutoAdvancing(false)
