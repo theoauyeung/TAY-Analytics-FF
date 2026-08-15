@@ -75,12 +75,6 @@ def get_rankings(
         d = dict(zip(_RANKING_KEYS, row))
         result.append(d)
 
-    # Default sort: blend VOR rank with ADP consensus so QBs aren't overvalued
-    # relative to market. Pure VOR inflates QBs because scarcity weight is tuned
-    # for ranking quality, not absolute draft position.
-    if sort == 'vor_rank':
-        result.sort(key=lambda d: _blended_score(d.get('vor_rank'), d.get('adp')))
-
     for i, d in enumerate(result, 1):
         d['rank'] = i
         result[i - 1] = RankingOut(**d)
