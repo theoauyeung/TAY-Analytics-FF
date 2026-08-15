@@ -161,8 +161,8 @@ def write_projections(
             mean_proj = float(s.mean())
             std_proj  = float(s.std())
             p10, p25, p50, p75, p90 = (float(np.percentile(s, p)) for p in [10, 25, 50, 75, 90])
-            boom_prob = float((s > mean_proj * 1.5).mean())
-            bust_prob = float((s < mean_proj * 0.5).mean())
+            boom_prob = float((s > mean_proj * 1.2).mean())
+            bust_prob = float((s < mean_proj * 0.8).mean())
 
             conn.execute("""
                 INSERT OR REPLACE INTO projections

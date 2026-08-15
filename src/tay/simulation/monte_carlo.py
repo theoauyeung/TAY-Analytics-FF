@@ -77,8 +77,8 @@ def run_simulation(
         sim_mean = float(totals.mean())
         sim_std = float(totals.std())
         p10, p25, p50, p75, p90 = (float(np.percentile(totals, p)) for p in [10, 25, 50, 75, 90])
-        boom_prob = float((totals > sim_mean * 1.5).mean()) if sim_mean > 0 else 0.0
-        bust_prob = float((totals < sim_mean * 0.5).mean()) if sim_mean > 0 else 0.0
+        boom_prob = float((totals > sim_mean * 1.2).mean()) if sim_mean > 0 else 0.0
+        bust_prob = float((totals < sim_mean * 0.8).mean()) if sim_mean > 0 else 0.0
 
         conn.execute("""
             UPDATE projections SET
