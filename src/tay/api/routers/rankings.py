@@ -23,7 +23,7 @@ _RANKING_BASE = """
     LEFT JOIN adp a ON a.gsis_id = pr.gsis_id
                    AND a.season = pr.season
                    AND a.format = 'ppr'
-                   AND a.platform = 'fantasycalc'
+                   AND a.platform = 'espn'
                    AND a.adp NOT IN (999, 9999999)
     WHERE pr.season = ? AND pr.model_version = ?
       AND p.position IN ('QB', 'RB', 'WR', 'TE')
@@ -103,7 +103,7 @@ def get_tiers(
         LEFT JOIN adp a ON a.gsis_id = pr.gsis_id
                        AND a.season = pr.season
                        AND a.format = 'ppr'
-                       AND a.platform = 'fantasycalc'
+                       AND a.platform = 'espn'
                        AND a.adp NOT IN (999, 9999999)
         WHERE pr.season = ? AND pr.model_version = ?
           AND p.position = ?

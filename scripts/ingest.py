@@ -31,7 +31,7 @@ from tay.ingestion import (
     sleeper,
     pfr,
 )
-from tay.ingestion import fantasycalc
+from tay.ingestion import fantasycalc, espn as espn_ingest
 
 
 def parse_args():
@@ -78,6 +78,9 @@ def main():
 
     step("7. FantasyCalc consensus ADP (all positions)")
     fantasycalc.ingest(season=args.adp_season)
+
+    step("7b. ESPN ADP (PPR)")
+    espn_ingest.ingest(season=args.adp_season, format_='ppr')
 
     if not args.skip_pfr:
         step("8. PFR combine data")
