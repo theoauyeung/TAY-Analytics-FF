@@ -187,8 +187,10 @@ def write_projections(
                 lag2  = float(X_raw[j, lag2_idx])  if lag2_idx  >= 0 else 0.0
                 exp   = float(X_raw[j, exp_idx])   if exp_idx   >= 0 else 99.0
 
-                # Injury correction: missed games → raw volume stats under-represent talent
-                if games < 14 and ewma > 150:
+                # Injury correction: missed games → raw volume stats under-represent talent.
+                # Skip for veterans (exp >= 8): missed games may reflect real decline,
+                # not injury — blending toward historical highs would over-project aging backs.
+                if games < 14 and ewma > 150 and exp < 8:
                     model_out = float(samples[:, j].mean())
                     anchor = 0.55 * lag2 + 0.45 * ewma if lag2 > 100 else ewma
                     if anchor > model_out:
