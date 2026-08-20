@@ -7,7 +7,7 @@ from tay.valuation.replacement import POSITIONS
 # Single-QB PPR scarcity weights. QB is discounted because starter-quality QBs
 # are available deep into drafts (late-round QB strategy). RB is 1.0 (scarcest).
 _SCARCITY_WEIGHT: dict[str, float] = {
-    'QB': 0.85,
+    'QB': 0.28,
     'RB': 1.0,
     'WR': 0.85,
     'TE': 0.75,

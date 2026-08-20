@@ -12,7 +12,7 @@ from tay.models.trainer import train_model
 
 POSITIONS = ['QB', 'RB', 'WR', 'TE']
 MODEL_VERSION = 'neural-v1'
-_MC_SAMPLES = 50
+_MC_SAMPLES = 200
 
 
 def _mc_predict(model: PositionMLP, X: torch.Tensor) -> np.ndarray:
@@ -106,14 +106,14 @@ def write_projections(
                 rush_tds     = float(X_raw[j, rush_tds_idx]) if rush_tds_idx >= 0 else 0.0
                 games_played = float(X_raw[j, games_idx])    if games_idx    >= 0 else 17.0
                 pace         = 17.0 / max(games_played, 5.0)
-                rush_score   = (rush_yds * pace) + (rush_tds * pace) * 80
+                rush_score   = (rush_yds * pace) + (rush_tds * pace) * 20
 
                 # 1. Experience/potential discount: generic young QBs are discounted because
                 #    the model sees many busts in the training data. Skip this discount for
                 #    proven rushing QBs — their rushing ability is self-evident and the
                 #    experience penalty would cancel the rush bonus unfairly.
                 is_high_pick    = pick_val >= 0.15
-                is_proven_rusher = rush_score >= 300
+                is_proven_rusher = rush_score >= 800
                 if not is_proven_rusher:
                     if exp <= 1:
                         samples[:, j] *= 0.83 if is_high_pick else 0.75
@@ -131,30 +131,49 @@ def write_projections(
                 elif rush_score >= 200:
                     samples[:, j] *= 1.05   # occasional rusher
 
-                # 3. Injury-season correction: when a QB played <11 games the model's
+                # 3. Injury-season correction: when a QB played <15 games the model's
                 #    raw-volume inputs under-represent talent. Blend toward anchor from
                 #    lag2 PPR and per-game EWMA projection.
                 if games_played < 15 and lag2_idx >= 0 and ep17_idx >= 0:
                     lag2   = float(X_raw[j, lag2_idx])
                     ep17   = float(X_raw[j, ep17_idx])
-                    # For rushing QBs: weight lag2 (last healthy season) more heavily
-                    # since their rushing ability is the persistent talent signal.
-                    # For pocket QBs: equal weight between lag2 and per-game EWMA.
                     if rush_score >= 150:
+                        # Rushing QBs: lag2 (last healthy season) is the persistent signal
                         anchor = 0.7 * lag2 + 0.3 * ep17
+                    elif games_played < 10:
+                        # Severe injury: lag2 may be an outlier season; ewma17 is more stable
+                        anchor = ep17
                     else:
-                        anchor = (lag2 + ep17) / 2.0
+                        # Moderate injury: blend, but weight ewma17 more than lag2
+                        anchor = 0.30 * lag2 + 0.70 * ep17
                     if anchor > 200:
                         model_out = float(samples[:, j].mean())
-                        # Rushing QBs: trust the anchor more (injury obscures true talent)
-                        # Pocket QBs: injury correction is also talent signal, blend lightly
                         if rush_score >= 150:
                             w_model = 0.10 if games_played < 8 else 0.25
+                            target  = w_model * model_out + (1.0 - w_model) * anchor
+                        elif games_played < 10:
+                            # Severe injury pocket QB: cap at anchor + 5% to prevent
+                            # an outlier lag2 season from pulling projection far above ewma17.
+                            target  = min(0.10 * model_out + 0.90 * anchor, anchor * 1.05)
                         else:
-                            w_model = 0.20 if games_played < 8 else 0.40
-                        target    = w_model * model_out + (1.0 - w_model) * anchor
-                        factor    = min(target / max(model_out, 20.0), 2.5)
+                            target  = 0.25 * model_out + 0.75 * anchor
+                        factor = min(target / max(model_out, 20.0), 2.5)
                         samples[:, j] *= factor
+
+                # 4. Elite veteran underestimation: established dual-threat QBs (6+ years,
+                #    strong rushing) whose output falls well below their long-run EWMA.
+                #    The model over-discounts age for QBs who maintain elite rushing ability.
+                #    Only apply when the rush bonus (step 3) didn't already boost this player,
+                #    to prevent the two multipliers from stacking into top-10 QB territory.
+                if (exp >= 6 and games_played >= 15 and ep17_idx >= 0 and rush_score >= 400
+                        and rush_score < 600):
+                    ep17 = float(X_raw[j, ep17_idx])
+                    if ep17 >= 380:
+                        model_out = float(samples[:, j].mean())
+                        if model_out < ep17 * 0.97:
+                            target = 0.30 * model_out + 0.70 * ep17
+                            factor = min(target / max(model_out, 20.0), 1.2)
+                            samples[:, j] *= factor
 
         if pos == 'RB':
             games_idx = feature_names.index('prev_games')       if 'prev_games'       in feature_names else -1
@@ -177,10 +196,11 @@ def write_projections(
                         target  = w_model * model_out + (1.0 - w_model) * anchor
                         samples[:, j] *= min(target / max(model_out, 20.0), 1.8)
 
-                # Bounce-back correction: large single-year drop for an established back
-                # (coaching change, early injury, role change) — blend toward prior level.
-                # Guard: exp < 9 avoids boosting aging backs in genuine decline.
-                elif ewma > 200 and exp < 9:
+                # Bounce-back correction: large single-year drop due to injury (missed games)
+                # for an established back — blend toward prior level.
+                # Guard: games < 14 ensures this only fires for injury seasons, not
+                # full-season underperformance that may reflect real decline or role change.
+                elif games < 14 and ewma > 200 and exp < 9:
                     model_out = float(samples[:, j].mean())
                     if model_out < ewma * 0.82:
                         anchor = 0.40 * lag2 + 0.60 * ewma if lag2 > 100 else ewma
