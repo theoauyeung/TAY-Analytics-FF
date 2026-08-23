@@ -49,7 +49,43 @@ def _compute_opportunity_share(
     prior_season: int,
     target_season: int,
 ) -> None:
-    pass  # implemented in Task 2
+    conn.execute("""
+        WITH team_pass AS (
+            SELECT posteam                          AS team,
+                   COUNT(*)                         AS team_attempts,
+                   SUM(COALESCE(air_yards, 0.0))    AS team_air_yards
+            FROM play_by_play
+            WHERE pass_attempt = 1 AND season_type = 'REG' AND season = ?
+            GROUP BY posteam
+        ),
+        player_opps AS (
+            SELECT receiver_id                       AS gsis_id,
+                   COUNT(*)                          AS targets,
+                   SUM(COALESCE(air_yards, 0.0))     AS player_air_yards
+            FROM play_by_play
+            WHERE pass_attempt = 1 AND receiver_id IS NOT NULL
+              AND season_type = 'REG' AND season = ?
+            GROUP BY receiver_id
+        ),
+        computed AS (
+            SELECT pf.gsis_id,
+                   po.targets          / NULLIF(tp.team_attempts,   0) AS target_share,
+                   po.player_air_yards / NULLIF(tp.team_air_yards,  0) AS air_yards_share,
+                   1.5 * po.targets          / NULLIF(tp.team_attempts,  0)
+                 + 0.7 * po.player_air_yards / NULLIF(tp.team_air_yards, 0) AS wopr
+            FROM player_features pf
+            JOIN player_opps po ON po.gsis_id = pf.gsis_id
+            JOIN team_pass   tp ON tp.team    = pf.team
+            WHERE pf.season = ?
+        )
+        UPDATE player_features
+        SET target_share    = c.target_share,
+            air_yards_share = c.air_yards_share,
+            wopr            = c.wopr
+        FROM computed c
+        WHERE player_features.gsis_id = c.gsis_id
+          AND player_features.season  = ?
+    """, [prior_season, prior_season, target_season, target_season])
 
 
 def _compute_consistency(
