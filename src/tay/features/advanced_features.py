@@ -93,7 +93,50 @@ def _compute_consistency(
     prior_season: int,
     target_season: int,
 ) -> None:
-    pass  # implemented in Task 3
+    conn.execute("""
+        WITH weekly_pts AS (
+            SELECT receiver_id AS gsis_id,
+                   week,
+                   SUM(CASE WHEN complete_pass = 1 THEN 1.0              ELSE 0 END
+                     + CASE WHEN complete_pass = 1 THEN yards_gained * 0.1 ELSE 0 END
+                     + CASE WHEN complete_pass = 1 AND touchdown = 1 THEN 6.0 ELSE 0 END
+                   ) AS fpts
+            FROM play_by_play
+            WHERE pass_attempt = 1 AND receiver_id IS NOT NULL
+              AND season_type = 'REG' AND season = ?
+            GROUP BY receiver_id, week
+            UNION ALL
+            SELECT rusher_id AS gsis_id,
+                   week,
+                   SUM(yards_gained * 0.1
+                     + CASE WHEN touchdown = 1 THEN 6.0 ELSE 0 END
+                   ) AS fpts
+            FROM play_by_play
+            WHERE rush_attempt = 1 AND rusher_id IS NOT NULL
+              AND season_type = 'REG' AND season = ?
+            GROUP BY rusher_id, week
+        ),
+        combined AS (
+            SELECT gsis_id, week, SUM(fpts) AS total_fpts
+            FROM weekly_pts
+            GROUP BY gsis_id, week
+        ),
+        consistency AS (
+            SELECT gsis_id,
+                   STDDEV_SAMP(total_fpts)                                     AS weekly_fpts_std,
+                   AVG(CASE WHEN total_fpts >= 20 THEN 1.0 ELSE 0.0 END)       AS boom_rate,
+                   AVG(CASE WHEN total_fpts <   8 THEN 1.0 ELSE 0.0 END)       AS floor_rate
+            FROM combined
+            GROUP BY gsis_id
+        )
+        UPDATE player_features
+        SET weekly_fpts_std = c.weekly_fpts_std,
+            boom_rate       = c.boom_rate,
+            floor_rate      = c.floor_rate
+        FROM consistency c
+        WHERE player_features.gsis_id = c.gsis_id
+          AND player_features.season  = ?
+    """, [prior_season, prior_season, target_season])
 
 
 def _compute_sos(

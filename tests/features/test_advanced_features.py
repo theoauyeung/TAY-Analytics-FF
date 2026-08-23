@@ -132,6 +132,93 @@ def test_rb_gets_target_share(opp_conn):
     assert abs(row[0] - 0.10) < 0.01
 
 
+@pytest.fixture
+def consist_conn(tmp_path):
+    """3 weeks of plays for WR1: [10.0, 21.0, 2.0] weekly PPR pts."""
+    c = get_conn(tmp_path / 'consist.duckdb')
+    init_schema(c)
+
+    plays = []
+    # Week 1: 4 completions, 15 yards each → 4*1 + 60*0.1 + 0 = 10.0
+    for i in range(4):
+        plays.append((f'w1_c{i}', 'g1', 2025, 1, 'REG', 'KC', 'DEN', 'pass',
+                      1, 'wr1', None, 10.0, 15.0, 1, 0, 0))
+    for i in range(2):  # incompletions
+        plays.append((f'w1_i{i}', 'g1', 2025, 1, 'REG', 'KC', 'DEN', 'pass',
+                      1, 'wr1', None, 10.0, 0.0, 0, 0, 0))
+
+    # Week 2: 4 completions 20 yards + 1 TD completion 20 yards → 5*1 + 100*0.1 + 6 = 21.0 (boom)
+    for i in range(4):
+        plays.append((f'w2_c{i}', 'g2', 2025, 2, 'REG', 'KC', 'LV', 'pass',
+                      1, 'wr1', None, 15.0, 20.0, 1, 0, 0))
+    plays.append(('w2_td', 'g2', 2025, 2, 'REG', 'KC', 'LV', 'pass',
+                  1, 'wr1', None, 15.0, 20.0, 1, 1, 0))
+    for i in range(2):  # incompletions
+        plays.append((f'w2_i{i}', 'g2', 2025, 2, 'REG', 'KC', 'LV', 'pass',
+                      1, 'wr1', None, 15.0, 0.0, 0, 0, 0))
+
+    # Week 3: 1 completion, 10 yards → 1*1 + 10*0.1 = 2.0 (floor)
+    plays.append(('w3_c0', 'g3', 2025, 3, 'REG', 'KC', 'LAC', 'pass',
+                  1, 'wr1', None, 10.0, 10.0, 1, 0, 0))
+    for i in range(5):  # incompletions
+        plays.append((f'w3_i{i}', 'g3', 2025, 3, 'REG', 'KC', 'LAC', 'pass',
+                      1, 'wr1', None, 10.0, 0.0, 0, 0, 0))
+
+    c.executemany("""
+        INSERT INTO play_by_play
+            (play_id, game_id, season, week, season_type, posteam, defteam, play_type,
+             pass_attempt, receiver_id, rusher_id, air_yards, yards_gained,
+             complete_pass, touchdown, rush_attempt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, plays)
+
+    c.execute("""
+        INSERT INTO player_features (gsis_id, season, position, team)
+        VALUES ('wr1', 2026, 'WR', 'KC')
+    """)
+    yield c
+    c.close()
+
+
+def test_boom_rate(consist_conn):
+    from tay.features.advanced_features import _migrate_advanced_features, _compute_consistency
+    _migrate_advanced_features(consist_conn)
+    _compute_consistency(consist_conn, prior_season=2025, target_season=2026)
+
+    row = consist_conn.execute(
+        "SELECT boom_rate FROM player_features WHERE gsis_id = 'wr1' AND season = 2026"
+    ).fetchone()
+    # Week 2 (21 pts) is the only boom week out of 3 → 1/3
+    assert row is not None
+    assert abs(row[0] - 1 / 3) < 0.01
+
+
+def test_floor_rate(consist_conn):
+    from tay.features.advanced_features import _migrate_advanced_features, _compute_consistency
+    _migrate_advanced_features(consist_conn)
+    _compute_consistency(consist_conn, prior_season=2025, target_season=2026)
+
+    row = consist_conn.execute(
+        "SELECT floor_rate FROM player_features WHERE gsis_id = 'wr1' AND season = 2026"
+    ).fetchone()
+    # Week 3 (2 pts) is the only floor week → 1/3
+    assert row is not None
+    assert abs(row[0] - 1 / 3) < 0.01
+
+
+def test_weekly_fpts_std(consist_conn):
+    from tay.features.advanced_features import _migrate_advanced_features, _compute_consistency
+    _migrate_advanced_features(consist_conn)
+    _compute_consistency(consist_conn, prior_season=2025, target_season=2026)
+
+    row = consist_conn.execute(
+        "SELECT weekly_fpts_std FROM player_features WHERE gsis_id = 'wr1' AND season = 2026"
+    ).fetchone()
+    # Weekly pts: wk1=10.0, wk2=21.0, wk3=2.0; std_samp > 0
+    assert row is not None
+    assert row[0] > 0
+
+
 def test_postseason_excluded(tmp_path):
     """Playoff plays (season_type != REG) must not count toward target share."""
     c = get_conn(tmp_path / 'post_test.duckdb')
