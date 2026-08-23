@@ -69,9 +69,9 @@ def _compute_opportunity_share(
         ),
         computed AS (
             SELECT pf.gsis_id,
-                   po.targets          / NULLIF(tp.team_attempts,   0) AS target_share,
+                   po.targets::DOUBLE          / NULLIF(tp.team_attempts,   0) AS target_share,
                    po.player_air_yards / NULLIF(tp.team_air_yards,  0) AS air_yards_share,
-                   1.5 * po.targets          / NULLIF(tp.team_attempts,  0)
+                   1.5 * po.targets::DOUBLE          / NULLIF(tp.team_attempts,  0)
                  + 0.7 * po.player_air_yards / NULLIF(tp.team_air_yards, 0) AS wopr
             FROM player_features pf
             JOIN player_opps po ON po.gsis_id = pf.gsis_id
