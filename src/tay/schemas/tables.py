@@ -80,8 +80,6 @@ CREATE TABLE IF NOT EXISTS player_season_stats (
     cpoe                DOUBLE,
     -- Fantasy points
     fantasy_points_ppr  DOUBLE DEFAULT 0,
-    fantasy_points_hppr DOUBLE DEFAULT 0,
-    fantasy_points_std  DOUBLE DEFAULT 0,
     created_at          TIMESTAMP DEFAULT current_timestamp,
     PRIMARY KEY (gsis_id, season)
 )

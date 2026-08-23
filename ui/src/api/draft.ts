@@ -143,17 +143,12 @@ function mapRecommendation(r: BackendRecommendation): RecommendationState['topPi
 }
 
 function toDraftStateIn(state: LiveDraftState) {
-  const scoringMap: Record<string, string> = {
-    ppr: 'full',
-    half_ppr: 'half',
-    standard: 'standard',
-  }
   return {
     season: SEASON,
     model_version: MODEL_VERSION,
     league_settings: {
       teams: state.config.teams,
-      scoring: scoringMap[state.config.scoringFormat] ?? state.config.scoringFormat,
+      scoring: 'full',
       roster_config: {
         QB: state.config.rosterConfig.QB,
         RB: state.config.rosterConfig.RB,

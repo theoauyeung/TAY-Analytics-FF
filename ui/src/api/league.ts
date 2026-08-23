@@ -11,7 +11,7 @@ interface BackendLeagueSettings {
 function fromBackend(s: BackendLeagueSettings): LeagueSettings {
   return {
     teams: s.teams,
-    format: (s.scoring === 'full' ? 'ppr' : s.scoring === 'half' ? 'half_ppr' : 'standard') as ScoringFormat,
+    format: 'ppr' as ScoringFormat,
     rosterConfig: {
       QB: s.roster_config['QB'] ?? 1,
       RB: s.roster_config['RB'] ?? 2,
@@ -26,7 +26,7 @@ function fromBackend(s: BackendLeagueSettings): LeagueSettings {
 function toBackend(s: LeagueSettings): BackendLeagueSettings {
   return {
     teams: s.teams,
-    scoring: s.format === 'ppr' ? 'full' : s.format === 'half_ppr' ? 'half' : 'standard',
+    scoring: 'full',
     roster_config: {
       QB: s.rosterConfig.QB,
       RB: s.rosterConfig.RB,

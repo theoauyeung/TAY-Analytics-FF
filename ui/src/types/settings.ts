@@ -11,7 +11,7 @@ export interface RosterConfig {
 
 export interface LeagueSettings {
   teams: number          // 8–16
-  format: ScoringFormat  // 'ppr' | 'half_ppr' | 'standard'
+  format: ScoringFormat  // 'ppr'
   rosterConfig: RosterConfig
 }
 

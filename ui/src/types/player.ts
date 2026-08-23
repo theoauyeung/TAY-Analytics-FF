@@ -1,6 +1,6 @@
 export type Position = 'QB' | 'RB' | 'WR' | 'TE' | 'K' | 'DST'
 export type NFLTeam = string  // 'KC', 'BUF', 'PHI', etc.
-export type ScoringFormat = 'standard' | 'half_ppr' | 'ppr'
+export type ScoringFormat = 'ppr'
 export type DraftType = 'redraft' | 'best_ball' | 'dynasty'
 
 export interface Projection {

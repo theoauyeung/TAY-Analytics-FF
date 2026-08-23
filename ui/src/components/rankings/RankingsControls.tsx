@@ -9,8 +9,6 @@ interface Props {
 const POSITIONS: Array<Position | 'ALL'> = ['ALL', 'QB', 'RB', 'WR', 'TE']
 const FORMATS = [
   { value: 'ppr',      label: 'PPR' },
-  { value: 'half_ppr', label: 'Half PPR' },
-  { value: 'standard', label: 'Standard' },
 ] as const
 const DRAFT_TYPES = [
   { value: 'redraft', label: 'Redraft' },

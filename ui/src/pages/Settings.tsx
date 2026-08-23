@@ -4,8 +4,6 @@ import type { ScoringFormat } from '../types'
 
 const FORMATS: Array<{ value: ScoringFormat; label: string }> = [
   { value: 'ppr',      label: 'PPR' },
-  { value: 'half_ppr', label: 'Half PPR' },
-  { value: 'standard', label: 'Standard' },
 ]
 
 const TEAM_COUNTS = [8, 10, 12, 14, 16]

@@ -20,7 +20,7 @@ def aggregate_player_stats(
                 carries, rush_yards, rush_tds,
                 targets, receptions, rec_yards, rec_tds,
                 air_yards, yards_after_catch, epa_per_play, cpoe,
-                fantasy_points_ppr, fantasy_points_hppr, fantasy_points_std
+                fantasy_points_ppr
             )
             WITH all_players AS (
                 -- Passers
@@ -133,13 +133,7 @@ def aggregate_player_stats(
                 -- PPR: 1pt/rec + 0.1pt/yard + 6pt/TD (pass: 0.04pt/yard, 6pt/TD, -2pt/INT)
                 (pass_yards * 0.04 + pass_tds * 6 - interceptions * 2
                  + rush_yards * 0.1 + rush_tds * 6
-                 + receptions * 1 + rec_yards * 0.1 + rec_tds * 6) AS fantasy_points_ppr,
-                (pass_yards * 0.04 + pass_tds * 6 - interceptions * 2
-                 + rush_yards * 0.1 + rush_tds * 6
-                 + receptions * 0.5 + rec_yards * 0.1 + rec_tds * 6) AS fantasy_points_hppr,
-                (pass_yards * 0.04 + pass_tds * 6 - interceptions * 2
-                 + rush_yards * 0.1 + rush_tds * 6
-                 + rec_yards * 0.1 + rec_tds * 6) AS fantasy_points_std
+                 + receptions * 1 + rec_yards * 0.1 + rec_tds * 6) AS fantasy_points_ppr
             FROM agg
         """, [season, season, season])
 

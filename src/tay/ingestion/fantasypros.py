@@ -19,8 +19,6 @@ FP_ADP_HTML_URL = "https://www.fantasypros.com/nfl/adp/{format_slug}.php"
 
 FORMAT_SLUGS = {
     "ppr": "ppr-overall",
-    "half_ppr": "half-point-ppr-overall",
-    "standard": "overall",
 }
 
 FP_HEADERS = {
@@ -104,7 +102,7 @@ def ingest(season: int = 2026, db_path=None) -> None:
     conn = get_conn(db_path) if db_path else get_conn()
     init_schema(conn)
 
-    for format_ in ["ppr", "half_ppr", "standard"]:
+    for format_ in ["ppr"]:
         print(f"Fetching FantasyPros ADP ({format_})...")
         try:
             df = fetch_fp_adp(format_)
