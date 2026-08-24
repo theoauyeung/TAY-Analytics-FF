@@ -5,6 +5,7 @@ from datetime import date
 import duckdb
 from tay.db import get_conn, init_schema
 from tay.features.advanced_features import compute_advanced_features
+from tay.features.snap_features import compute_snap_features
 
 SKILL_POSITIONS = ("'QB'", "'RB'", "'WR'", "'TE'")
 SKILL_POS_SQL = f"({', '.join(SKILL_POSITIONS)})"
@@ -267,6 +268,7 @@ def build_player_features(
         print(f"  Season {season}: {total} player-feature rows built so far")
 
     compute_advanced_features(conn, target_seasons)
+    compute_snap_features(conn, target_seasons)
     return total
 
 

@@ -18,6 +18,8 @@ QB_FEATURES: list[str] = [
     'weekly_fpts_std',
     'boom_rate',
     'sos_pts_allowed',
+    'snap_share',
+    'snap_share_trend',
 ]
 
 RB_FEATURES: list[str] = [
@@ -40,6 +42,8 @@ RB_FEATURES: list[str] = [
     'boom_rate',
     'floor_rate',
     'sos_pts_allowed',
+    'snap_share',
+    'snap_share_trend',
 ]
 
 WR_FEATURES: list[str] = [
@@ -65,6 +69,8 @@ WR_FEATURES: list[str] = [
     'boom_rate',
     'floor_rate',
     'sos_pts_allowed',
+    'snap_share',
+    'snap_share_trend',
 ]
 
 TE_FEATURES: list[str] = [
@@ -89,6 +95,8 @@ TE_FEATURES: list[str] = [
     'boom_rate',
     'floor_rate',
     'sos_pts_allowed',
+    'snap_share',
+    'snap_share_trend',
 ]
 
 POSITION_FEATURES: dict[str, list[str]] = {
