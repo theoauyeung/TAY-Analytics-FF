@@ -349,8 +349,21 @@ CREATE TABLE IF NOT EXISTS team_features (
 )
 """
 
+SNAP_COUNTS = """
+CREATE TABLE IF NOT EXISTS snap_counts (
+    gsis_id          VARCHAR NOT NULL,
+    season           INTEGER NOT NULL,
+    snap_share       DOUBLE,
+    snap_share_trend DOUBLE,
+    total_snaps      INTEGER,
+    games_played     INTEGER,
+    created_at       TIMESTAMP DEFAULT current_timestamp,
+    PRIMARY KEY (gsis_id, season)
+)
+"""
+
 ALL_TABLES = [
     PLAYERS, PLAY_BY_PLAY, PLAYER_SEASON_STATS, TEAM_SEASON_STATS,
     ROSTERS, DRAFT_PICKS, COMBINE_DATA, ADP, PROJECTIONS, DRAFT_SESSIONS,
-    PLAYER_FEATURES, TEAM_FEATURES,
+    PLAYER_FEATURES, TEAM_FEATURES, SNAP_COUNTS,
 ]
