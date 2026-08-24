@@ -130,7 +130,8 @@ def test_recommend_exhausted_position_appears_in_needs():
 
 def test_recommend_may_not_make_it_back_list():
     conn = _make_db()
-    # With picks_until_next=10 and ADP=2 (R1), R1 should flag as may-not-make-it-back
+    # R1 has ADP=2 and becomes the top pick (highest VOR after QB suppression)
+    # W1 (ADP=4) and Q1 (ADP=5, QB-suppressed) end up in may_not_make_it_back
     state = DraftState(
         season=2026, model_version='test-v1',
         league_settings=LeagueSettings(),
@@ -138,7 +139,7 @@ def test_recommend_may_not_make_it_back_list():
         drafted_ids=[], user_roster={'QB': [], 'RB': [], 'WR': [], 'TE': [], 'FLEX': []},
     )
     result = recommend(conn, state)
-    # R1 has ADP=2, user picks ~12th — should appear in may_not_make_it_back
+    # W1 has ADP=4, user picks ~12th — should appear in may_not_make_it_back
     mnmib_ids = [p.gsis_id for p in result.may_not_make_it_back]
-    assert 'R1' in mnmib_ids
+    assert 'W1' in mnmib_ids  # ADP=4, likely gone by user's turn at pick 12
     conn.close()

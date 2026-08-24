@@ -38,7 +38,7 @@ def test_vor_values():
     compute_vor(conn, 2026, 'v1', REPL)
     qb1_vor = conn.execute("SELECT vor FROM projections WHERE gsis_id='qb1'").fetchone()[0]
     qb2_vor = conn.execute("SELECT vor FROM projections WHERE gsis_id='qb2'").fetchone()[0]
-    assert qb1_vor == pytest.approx(100.0)
+    assert qb1_vor == pytest.approx(28.0)
     assert qb2_vor == pytest.approx(0.0)
     conn.close()
 
@@ -54,13 +54,10 @@ def test_vor_negative_below_replacement():
 def test_vor_rank_ordering():
     conn = _make_conn()
     compute_vor(conn, 2026, 'v1', REPL)
-    rank = conn.execute("SELECT vor_rank FROM projections WHERE gsis_id='qb1'").fetchone()[0]
-    assert rank == 1
-    ranks = conn.execute(
-        "SELECT vor_rank FROM projections WHERE gsis_id IN ('qb1','rb1') ORDER BY vor_rank"
-    ).fetchall()
-    assert ranks[0][0] == 1
-    assert ranks[1][0] == 2
+    rb1_rank = conn.execute("SELECT vor_rank FROM projections WHERE gsis_id='rb1'").fetchone()[0]
+    assert rb1_rank == 1
+    qb1_rank = conn.execute("SELECT vor_rank FROM projections WHERE gsis_id='qb1'").fetchone()[0]
+    assert rb1_rank < qb1_rank  # RBs rank higher due to scarcity weighting
     conn.close()
 
 

@@ -28,22 +28,22 @@ def _state(picks_until_next=5, current_pick=1, user_roster=None):
 def test_future_availability_high_adp_relative_to_picks():
     # Player with ADP 100, only 2 picks away → very likely available
     p = _player(adp=100.0)
-    fa = future_availability(p, picks_until_next=2)
+    fa = future_availability(p, current_pick=1, picks_until_next=2)
     assert fa > 0.9
 
 
 def test_future_availability_low_adp_relative_to_picks():
     # Player with ADP 3, 10 picks away → likely gone
     p = _player(adp=3.0)
-    fa = future_availability(p, picks_until_next=10)
+    fa = future_availability(p, current_pick=1, picks_until_next=10)
     assert fa < 0.5
 
 
 def test_future_availability_clamped_to_unit_interval():
     p = _player(adp=1.0)
-    assert 0.0 <= future_availability(p, picks_until_next=100) <= 1.0
+    assert 0.0 <= future_availability(p, current_pick=1, picks_until_next=100) <= 1.0
     p2 = _player(adp=999.0)
-    assert 0.0 <= future_availability(p2, picks_until_next=0) <= 1.0
+    assert 0.0 <= future_availability(p2, current_pick=1, picks_until_next=0) <= 1.0
 
 
 def test_positional_urgency_scarce():
@@ -66,9 +66,9 @@ def test_roster_fit_empty_roster_bonus():
 
 
 def test_roster_fit_full_position_penalty():
-    # RB slots full (2 RBs, 1 FLEX already filled)
+    # RB slots full: 3 RBs, 2 WRs, 1 TE, no FLEX → total_skill_filled=6 >= total_skill_required=6
     state = _state(user_roster={
-        'QB': [], 'RB': ['a', 'b'], 'WR': [], 'TE': [], 'FLEX': ['c'],
+        'QB': [], 'RB': ['a', 'b', 'extra'], 'WR': ['c', 'd'], 'TE': ['e'], 'FLEX': [],
     })
     p = _player(position='RB')
     rf = roster_fit(p, state.user_roster)

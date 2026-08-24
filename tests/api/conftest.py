@@ -12,6 +12,7 @@ def make_test_db() -> duckdb.DuckDBPyConnection:
     conn.execute("""
         CREATE TABLE players (
             gsis_id VARCHAR PRIMARY KEY,
+            espn_id VARCHAR,
             name VARCHAR NOT NULL,
             position VARCHAR,
             team VARCHAR
@@ -60,12 +61,23 @@ def make_test_db() -> duckdb.DuckDBPyConnection:
             completed BOOLEAN DEFAULT FALSE
         )
     """)
+    conn.execute("""
+        CREATE TABLE player_analytics (
+            gsis_id VARCHAR NOT NULL,
+            season INTEGER NOT NULL,
+            efficiency_factor DOUBLE DEFAULT 0.0,
+            adp_bucket VARCHAR,
+            avg_pts_above_expectation DOUBLE,
+            sample_size INTEGER,
+            PRIMARY KEY (gsis_id, season)
+        )
+    """)
     # Insert test players
-    conn.executemany("INSERT INTO players VALUES (?, ?, ?, ?)", [
-        ('P1', 'Bijan Robinson', 'RB', 'ATL'),
-        ('P2', 'Josh Allen', 'QB', 'BUF'),
-        ('P3', 'Puka Nacua', 'WR', 'LAR'),
-        ('P4', 'Trey McBride', 'TE', 'ARI'),
+    conn.executemany("INSERT INTO players VALUES (?, ?, ?, ?, ?)", [
+        ('P1', '3054211', 'Bijan Robinson', 'RB', 'ATL'),
+        ('P2', '3918298', 'Josh Allen', 'QB', 'BUF'),
+        ('P3', '4429795', 'Puka Nacua', 'WR', 'LAR'),
+        ('P4', '4040715', 'Trey McBride', 'TE', 'ARI'),
     ])
     # Insert test projections
     conn.executemany("""

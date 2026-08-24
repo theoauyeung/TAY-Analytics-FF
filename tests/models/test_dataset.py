@@ -36,6 +36,15 @@ def _make_conn():
             team_pass_rate DOUBLE, team_pass_epa DOUBLE, team_total_plays INTEGER,
             incoming_vacated_targets DOUBLE, incoming_vacated_carries DOUBLE,
             depth_chart_pos INTEGER, draft_pick_value DOUBLE,
+            target_share DOUBLE,
+            air_yards_share DOUBLE,
+            wopr DOUBLE,
+            weekly_fpts_std DOUBLE,
+            boom_rate DOUBLE,
+            floor_rate DOUBLE,
+            sos_pts_allowed DOUBLE,
+            snap_share DOUBLE,
+            snap_share_trend DOUBLE,
             next_season_fantasy_ppr DOUBLE
         )
     """)
@@ -146,6 +155,15 @@ def test_null_features_filled_with_zero():
             team_pass_rate DOUBLE, team_pass_epa DOUBLE, team_total_plays INTEGER,
             incoming_vacated_targets DOUBLE, incoming_vacated_carries DOUBLE,
             depth_chart_pos INTEGER, draft_pick_value DOUBLE,
+            target_share DOUBLE,
+            air_yards_share DOUBLE,
+            wopr DOUBLE,
+            weekly_fpts_std DOUBLE,
+            boom_rate DOUBLE,
+            floor_rate DOUBLE,
+            sos_pts_allowed DOUBLE,
+            snap_share DOUBLE,
+            snap_share_trend DOUBLE,
             next_season_fantasy_ppr DOUBLE
         )
     """)
