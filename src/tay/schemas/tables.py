@@ -362,8 +362,21 @@ CREATE TABLE IF NOT EXISTS snap_counts (
 )
 """
 
+PLAYER_ANALYTICS = """
+CREATE TABLE IF NOT EXISTS player_analytics (
+    gsis_id                   VARCHAR NOT NULL,
+    season                    INTEGER NOT NULL,
+    efficiency_factor         DOUBLE DEFAULT 0.0,
+    adp_bucket                VARCHAR,
+    avg_pts_above_expectation DOUBLE,
+    sample_size               INTEGER,
+    created_at                TIMESTAMP DEFAULT current_timestamp,
+    PRIMARY KEY (gsis_id, season)
+)
+"""
+
 ALL_TABLES = [
     PLAYERS, PLAY_BY_PLAY, PLAYER_SEASON_STATS, TEAM_SEASON_STATS,
     ROSTERS, DRAFT_PICKS, COMBINE_DATA, ADP, PROJECTIONS, DRAFT_SESSIONS,
-    PLAYER_FEATURES, TEAM_FEATURES, SNAP_COUNTS,
+    PLAYER_FEATURES, TEAM_FEATURES, SNAP_COUNTS, PLAYER_ANALYTICS,
 ]
