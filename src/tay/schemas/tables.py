@@ -205,6 +205,8 @@ CREATE TABLE IF NOT EXISTS projections (
     sim_bust_prob       DOUBLE,
     avail_mean          DOUBLE,   -- expected games played
     avail_std           DOUBLE,   -- std dev of games played
+    consensus_projection DOUBLE,
+    blended_projection   DOUBLE,
     created_at          TIMESTAMP DEFAULT current_timestamp,
     PRIMARY KEY (gsis_id, season, model_version)
 )
@@ -375,8 +377,28 @@ CREATE TABLE IF NOT EXISTS player_analytics (
 )
 """
 
+CONSENSUS_PROJECTIONS = """
+CREATE TABLE IF NOT EXISTS consensus_projections (
+    gsis_id         VARCHAR NOT NULL,
+    season          INTEGER NOT NULL,
+    source          VARCHAR NOT NULL DEFAULT 'fantasypros',
+    pass_yards      DOUBLE,
+    pass_tds        DOUBLE,
+    interceptions   DOUBLE,
+    rush_yards      DOUBLE,
+    rush_tds        DOUBLE,
+    receptions      DOUBLE,
+    rec_yards       DOUBLE,
+    rec_tds         DOUBLE,
+    points          DOUBLE,
+    scraped_at      TIMESTAMP DEFAULT current_timestamp,
+    PRIMARY KEY (gsis_id, season, source)
+)
+"""
+
 ALL_TABLES = [
     PLAYERS, PLAY_BY_PLAY, PLAYER_SEASON_STATS, TEAM_SEASON_STATS,
     ROSTERS, DRAFT_PICKS, COMBINE_DATA, ADP, PROJECTIONS, DRAFT_SESSIONS,
     PLAYER_FEATURES, TEAM_FEATURES, SNAP_COUNTS, PLAYER_ANALYTICS,
+    CONSENSUS_PROJECTIONS,
 ]

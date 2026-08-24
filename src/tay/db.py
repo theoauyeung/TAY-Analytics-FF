@@ -17,4 +17,7 @@ def init_schema(conn: duckdb.DuckDBPyConnection) -> None:
     """Create all tables if they do not exist."""
     for ddl in ALL_TABLES:
         conn.execute(ddl)
+    # Idempotent migrations for existing databases
+    conn.execute("ALTER TABLE projections ADD COLUMN IF NOT EXISTS consensus_projection DOUBLE")
+    conn.execute("ALTER TABLE projections ADD COLUMN IF NOT EXISTS blended_projection DOUBLE")
     conn.commit()
