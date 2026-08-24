@@ -219,6 +219,70 @@ def test_weekly_fpts_std(consist_conn):
     assert row[0] > 0
 
 
+@pytest.fixture
+def sos_conn(tmp_path):
+    """
+    WR1 on KC faces DEN (week 1) and LV (week 2).
+    DEN allows 15 PPR pts to WRs on average; LV allows 4.5.
+    Expected sos_pts_allowed for WR1 = (15 + 4.5) / 2 = 9.75
+    """
+    c = get_conn(tmp_path / 'sos.duckdb')
+    init_schema(c)
+
+    # WR2 plays for DEN (so DEN defense faces WR2 = WR1's opponent)
+    # WR3 plays for LV (LV defense faces WR3 = WR1's other opponent)
+    c.execute("""
+        INSERT INTO players (gsis_id, name, position) VALUES
+            ('wr1', 'WR One',   'WR'),
+            ('wr2', 'WR Two',   'WR'),
+            ('wr3', 'WR Three', 'WR')
+    """)
+
+    plays = [
+        # Week 1: KC (wr1) vs DEN. wr1 scores vs DEN.
+        # 5 completions, 20 yards each = 5*(1 + 2.0) = 15 pts → DEN allows 15 pts to WRs
+        ('g1_p1', 'g1', 2025, 1, 'REG', 'KC', 'DEN', 'pass', 1, 'wr1', None, 0.0, 20.0, 1, 0, 0),
+        ('g1_p2', 'g1', 2025, 1, 'REG', 'KC', 'DEN', 'pass', 1, 'wr1', None, 0.0, 20.0, 1, 0, 0),
+        ('g1_p3', 'g1', 2025, 1, 'REG', 'KC', 'DEN', 'pass', 1, 'wr1', None, 0.0, 20.0, 1, 0, 0),
+        ('g1_p4', 'g1', 2025, 1, 'REG', 'KC', 'DEN', 'pass', 1, 'wr1', None, 0.0, 20.0, 1, 0, 0),
+        ('g1_p5', 'g1', 2025, 1, 'REG', 'KC', 'DEN', 'pass', 1, 'wr1', None, 0.0, 20.0, 1, 0, 0),
+        # Week 2: KC vs LV. wr1 scores vs LV.
+        # 3 completions, 5 yards each = 3*(1 + 0.5) = 4.5 pts → LV allows 4.5 pts to WRs
+        ('g2_p1', 'g2', 2025, 2, 'REG', 'KC', 'LV', 'pass', 1, 'wr1', None, 0.0, 5.0, 1, 0, 0),
+        ('g2_p2', 'g2', 2025, 2, 'REG', 'KC', 'LV', 'pass', 1, 'wr1', None, 0.0, 5.0, 1, 0, 0),
+        ('g2_p3', 'g2', 2025, 2, 'REG', 'KC', 'LV', 'pass', 1, 'wr1', None, 0.0, 5.0, 1, 0, 0),
+    ]
+    c.executemany("""
+        INSERT INTO play_by_play
+            (play_id, game_id, season, week, season_type, posteam, defteam, play_type,
+             pass_attempt, receiver_id, rusher_id, air_yards, yards_gained,
+             complete_pass, touchdown, rush_attempt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, plays)
+
+    c.execute("""
+        INSERT INTO player_features (gsis_id, season, position, team)
+        VALUES ('wr1', 2026, 'WR', 'KC')
+    """)
+    yield c
+    c.close()
+
+
+def test_sos_pts_allowed(sos_conn):
+    from tay.features.advanced_features import _migrate_advanced_features, _compute_sos
+    _migrate_advanced_features(sos_conn)
+    _compute_sos(sos_conn, prior_season=2025, target_season=2026)
+
+    row = sos_conn.execute(
+        "SELECT sos_pts_allowed FROM player_features WHERE gsis_id = 'wr1' AND season = 2026"
+    ).fetchone()
+    assert row is not None
+    # DEN allowed: wr1 scored 5*(1 + 20*0.1) = 5*3 = 15 pts
+    # LV allowed:  wr1 scored 3*(1 + 5*0.1) = 3*1.5 = 4.5 pts
+    # SOS = avg(15, 4.5) = 9.75
+    assert abs(row[0] - 9.75) < 0.5  # allow small float variance
+
+
 def test_postseason_excluded(tmp_path):
     """Playoff plays (season_type != REG) must not count toward target share."""
     c = get_conn(tmp_path / 'post_test.duckdb')

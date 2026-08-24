@@ -144,4 +144,56 @@ def _compute_sos(
     prior_season: int,
     target_season: int,
 ) -> None:
-    pass  # implemented in Task 4
+    conn.execute("""
+        WITH game_pts AS (
+            SELECT receiver_id AS gsis_id,
+                   defteam,
+                   game_id,
+                   SUM(CASE WHEN complete_pass = 1 THEN 1.0              ELSE 0 END
+                     + CASE WHEN complete_pass = 1 THEN yards_gained * 0.1 ELSE 0 END
+                     + CASE WHEN complete_pass = 1 AND touchdown = 1 THEN 6.0 ELSE 0 END
+                   ) AS game_fpts
+            FROM play_by_play
+            WHERE pass_attempt = 1 AND receiver_id IS NOT NULL
+              AND season_type = 'REG' AND season = ?
+            GROUP BY receiver_id, defteam, game_id
+            UNION ALL
+            SELECT rusher_id,
+                   defteam,
+                   game_id,
+                   SUM(yards_gained * 0.1 + CASE WHEN touchdown = 1 THEN 6.0 ELSE 0 END)
+            FROM play_by_play
+            WHERE rush_attempt = 1 AND rusher_id IS NOT NULL
+              AND season_type = 'REG' AND season = ?
+            GROUP BY rusher_id, defteam, game_id
+        ),
+        combined_game_pts AS (
+            SELECT gsis_id, defteam, game_id, SUM(game_fpts) AS total_fpts
+            FROM game_pts
+            GROUP BY gsis_id, defteam, game_id
+        ),
+        def_vs_pos AS (
+            SELECT gp.defteam,
+                   pl.position,
+                   AVG(gp.total_fpts) AS avg_pts_allowed
+            FROM combined_game_pts gp
+            JOIN players pl ON pl.gsis_id = gp.gsis_id
+            GROUP BY gp.defteam, pl.position
+        ),
+        player_opponents AS (
+            SELECT DISTINCT gsis_id, defteam FROM combined_game_pts
+        ),
+        player_sos AS (
+            SELECT po.gsis_id,
+                   AVG(dvp.avg_pts_allowed) AS sos_pts_allowed
+            FROM player_opponents po
+            JOIN players pl ON pl.gsis_id = po.gsis_id
+            JOIN def_vs_pos dvp ON dvp.defteam = po.defteam AND dvp.position = pl.position
+            GROUP BY po.gsis_id
+        )
+        UPDATE player_features
+        SET sos_pts_allowed = ps.sos_pts_allowed
+        FROM player_sos ps
+        WHERE player_features.gsis_id = ps.gsis_id
+          AND player_features.season  = ?
+    """, [prior_season, prior_season, target_season])
