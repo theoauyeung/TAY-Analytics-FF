@@ -106,9 +106,10 @@ def get_rankings(
         d['blended_score'] = _blended_score(d.get('vor_rank'), d.get('adp'), ar)
         result_out.append(RankingOut(**d))
 
-    result_out.sort(key=lambda r: r.blended_score)
-    for i, r in enumerate(result_out, 1):
-        r.rank = i
+    if sort == 'vor_rank':
+        result_out.sort(key=lambda r: r.blended_score)
+        for i, r in enumerate(result_out, 1):
+            r.rank = i
     return result_out
 
 
