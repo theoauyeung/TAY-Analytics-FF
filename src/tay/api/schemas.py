@@ -47,6 +47,8 @@ class RankingOut(BaseModel):
     sim_boom_prob: float | None
     sim_bust_prob: float | None
     avail_mean: float | None
+    efficiency_factor: float = 0.0
+    blended_score: float = 0.0
 
 
 class TierPlayerOut(BaseModel):

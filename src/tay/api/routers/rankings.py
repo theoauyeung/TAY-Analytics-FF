@@ -17,7 +17,8 @@ _RANKING_BASE = """
            pr.vor, pr.vor_rank, COALESCE(a.adp, 999.0) AS adp,
            pr.adp_delta, pr.tier, pr.mean_projection,
            pr.sim_mean, pr.sim_p10, pr.sim_p90,
-           pr.sim_boom_prob, pr.sim_bust_prob, pr.avail_mean
+           pr.sim_boom_prob, pr.sim_bust_prob, pr.avail_mean,
+           COALESCE(pa.efficiency_factor, 0.0) AS efficiency_factor
     FROM projections pr
     JOIN players p ON p.gsis_id = pr.gsis_id
     LEFT JOIN adp a ON a.gsis_id = pr.gsis_id
@@ -25,6 +26,8 @@ _RANKING_BASE = """
                    AND a.format = 'ppr'
                    AND a.platform = 'espn'
                    AND a.adp NOT IN (999, 9999999)
+    LEFT JOIN player_analytics pa ON pa.gsis_id = pr.gsis_id
+                                  AND pa.season = pr.season
     WHERE pr.season = ? AND pr.model_version = ?
       AND p.position IN ('QB', 'RB', 'WR', 'TE')
 """
@@ -32,7 +35,7 @@ _RANKING_BASE = """
 _RANKING_KEYS = [
     'gsis_id', 'espn_id', 'name', 'position', 'team', 'vor', 'vor_rank', 'adp',
     'adp_delta', 'tier', 'mean_projection', 'sim_mean', 'sim_p10', 'sim_p90',
-    'sim_boom_prob', 'sim_bust_prob', 'avail_mean',
+    'sim_boom_prob', 'sim_bust_prob', 'avail_mean', 'efficiency_factor',
 ]
 
 _SORT_COLS = {
@@ -42,15 +45,25 @@ _SORT_COLS = {
 }
 
 
-_ADP_BLEND_WEIGHT = 0.3  # 70% VOR, 30% ADP consensus
+_ADP_BLEND_WEIGHT       = 0.25
+_ANALYTICS_BLEND_WEIGHT = 0.10
 
 
-def _blended_score(vor_rank: int | None, adp: float | None) -> float:
-    """Combined score for default ranking: blends VOR with market ADP."""
+def _blended_score(
+    vor_rank: int | None,
+    adp: float | None,
+    analytics_rank: int | None = None,
+) -> float:
+    """Blended ranking score: 65% VOR, 25% ADP, 10% historical draft efficiency."""
     vr = vor_rank if vor_rank is not None else 9999
+    ar = analytics_rank if analytics_rank is not None else vr
     if adp and adp < 900:
-        return (1 - _ADP_BLEND_WEIGHT) * vr + _ADP_BLEND_WEIGHT * adp
-    return float(vr)
+        return (
+            (1 - _ADP_BLEND_WEIGHT - _ANALYTICS_BLEND_WEIGHT) * vr
+            + _ADP_BLEND_WEIGHT       * adp
+            + _ANALYTICS_BLEND_WEIGHT * ar
+        )
+    return (1 - _ANALYTICS_BLEND_WEIGHT) * vr + _ANALYTICS_BLEND_WEIGHT * ar
 
 
 @router.get('/rankings', response_model=list[RankingOut])
@@ -75,10 +88,74 @@ def get_rankings(
         d = dict(zip(_RANKING_KEYS, row))
         result.append(d)
 
+    # Compute analytics_rank: sort result by efficiency_factor desc, assign 1-based rank
+    sorted_by_ef = sorted(
+        enumerate(result),
+        key=lambda x: x[1].get('efficiency_factor', 0.0),
+        reverse=True,
+    )
+    analytics_rank_map = {
+        orig_idx: ar_rank + 1
+        for ar_rank, (orig_idx, _) in enumerate(sorted_by_ef)
+    }
+
+    result_out = []
     for i, d in enumerate(result, 1):
         d['rank'] = i
-        result[i - 1] = RankingOut(**d)
-    return result
+        ar = analytics_rank_map.get(i - 1)
+        d['blended_score'] = _blended_score(d.get('vor_rank'), d.get('adp'), ar)
+        result_out.append(RankingOut(**d))
+
+    result_out.sort(key=lambda r: r.blended_score)
+    for i, r in enumerate(result_out, 1):
+        r.rank = i
+    return result_out
+
+
+@router.get('/analytics/draft-value')
+def get_draft_value(
+    season: int = Query(2026),
+    conn: duckdb.DuckDBPyConnection = Depends(get_db),
+) -> dict:
+    """Return top undervalued players and bucket efficiency stats."""
+    undervalued = conn.execute("""
+        SELECT p.name, p.position, p.team,
+               pa.efficiency_factor, pa.adp_bucket,
+               pa.avg_pts_above_expectation, pa.sample_size,
+               COALESCE(a.adp, 999) AS adp
+        FROM player_analytics pa
+        JOIN players p ON p.gsis_id = pa.gsis_id
+        LEFT JOIN adp a ON a.gsis_id = pa.gsis_id
+                       AND a.season = ? AND a.format = 'ppr' AND a.platform = 'espn'
+        WHERE pa.season = ? AND pa.sample_size >= 3
+        ORDER BY pa.efficiency_factor DESC
+        LIMIT 20
+    """, [season, season]).fetchall()
+
+    bucket_stats = conn.execute("""
+        SELECT pa.adp_bucket,
+               p.position,
+               AVG(pa.efficiency_factor)  AS avg_factor,
+               COUNT(*)                   AS sample_size
+        FROM player_analytics pa
+        JOIN players p ON p.gsis_id = pa.gsis_id
+        WHERE pa.season = ?
+        GROUP BY pa.adp_bucket, p.position
+        ORDER BY pa.adp_bucket, p.position
+    """, [season]).fetchall()
+
+    return {
+        'undervalued': [
+            {'name': r[0], 'position': r[1], 'team': r[2],
+             'efficiency_factor': r[3], 'adp_bucket': r[4],
+             'avg_pts_above': r[5], 'sample_size': r[6], 'adp': r[7]}
+            for r in undervalued
+        ],
+        'bucket_stats': [
+            {'bucket': r[0], 'position': r[1], 'avg_factor': r[2], 'sample_size': r[3]}
+            for r in bucket_stats
+        ],
+    }
 
 
 @router.get('/tiers/{position}', response_model=list[TierOut])

@@ -64,3 +64,18 @@ def test_adp_bucket_assigned(analytics_conn):
     assert _adp_bucket(10)  == '6-12'
     assert _adp_bucket(20)  == '13-24'
     assert _adp_bucket(120) == '109+'
+
+
+def test_blended_score_with_analytics(tmp_path):
+    from tay.api.routers.rankings import _blended_score
+    # Player with analytics_rank=50 (historically overdrafted) should rank worse
+    score_with    = _blended_score(vor_rank=10, adp=10.0, analytics_rank=50)
+    score_without = _blended_score(vor_rank=10, adp=10.0, analytics_rank=None)
+    assert score_with > score_without
+
+
+def test_blended_score_neutral_when_no_analytics(tmp_path):
+    from tay.api.routers.rankings import _blended_score
+    score = _blended_score(vor_rank=5, adp=5.0, analytics_rank=None)
+    # When analytics_rank=None, ar = vr = 5; blend = 0.65*5 + 0.25*5 + 0.10*5 = 5.0
+    assert abs(score - 5.0) < 0.01
