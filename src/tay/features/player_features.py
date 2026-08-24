@@ -9,9 +9,9 @@ from tay.features.advanced_features import compute_advanced_features
 SKILL_POSITIONS = ("'QB'", "'RB'", "'WR'", "'TE'")
 SKILL_POS_SQL = f"({', '.join(SKILL_POSITIONS)})"
 
-_W1 = 0.45
-_W2 = 0.35
-_W3 = 0.20
+_W1 = 0.6
+_W2 = 0.3
+_W3 = 0.1
 
 _LAG_COLUMNS = [
     ('lag2_fantasy_ppr', 'DOUBLE'),
@@ -26,20 +26,6 @@ _LAG_COLUMNS = [
     ('ewma_targets',     'DOUBLE'),
     ('ewma_carries',     'DOUBLE'),
     ('ewma_pass_yards',  'DOUBLE'),
-    # Per-game rate features (normalize injury-shortened seasons)
-    ('prev_fpts_per_game',   'DOUBLE'),
-    ('prev_fpts_proj17',     'DOUBLE'),
-    ('ewma_fpts_proj17',     'DOUBLE'),  # EWMA of per-game projected full season
-    ('pass_yards_per_game',  'DOUBLE'),
-    ('pass_tds_per_game',    'DOUBLE'),
-    ('rush_tds_per_game',    'DOUBLE'),
-    # Lag-2 advanced efficiency (prior healthy season talent signal)
-    ('lag2_epa_per_play',    'DOUBLE'),
-    ('lag2_cpoe',            'DOUBLE'),
-    # QB rushing history over multiple seasons
-    ('lag2_rush_yards',  'DOUBLE'),
-    ('lag3_rush_yards',  'DOUBLE'),
-    ('ewma_rush_yards',  'DOUBLE'),
 ]
 
 
@@ -114,15 +100,13 @@ def build_player_features(
 
             # Two-seasons-ago (N-2) stats for rolling average and lag features
             s2 = conn.execute("""
-                SELECT fantasy_points_ppr, targets, carries, pass_yards, rush_yards,
-                       games, epa_per_play, cpoe
+                SELECT fantasy_points_ppr, targets, carries, pass_yards
                 FROM player_season_stats WHERE gsis_id = ? AND season = ?
             """, [gsis_id, prior2]).fetchone()
 
             # Three-seasons-ago (N-3) stats for lag features
             s3 = conn.execute("""
-                SELECT fantasy_points_ppr, targets, carries, pass_yards, rush_yards,
-                       games, epa_per_play, cpoe
+                SELECT fantasy_points_ppr, targets, carries, pass_yards
                 FROM player_season_stats WHERE gsis_id = ? AND season = ?
             """, [gsis_id, prior3]).fetchone()
 
@@ -164,39 +148,18 @@ def build_player_features(
             lag2_tgts  = int(s2[1] or 0)   if s2 else None
             lag2_cars  = int(s2[2] or 0)   if s2 else None
             lag2_pyds  = float(s2[3] or 0) if s2 else None
-            lag2_ryds  = float(s2[4] or 0) if s2 else None
-            lag2_g     = max(int(s2[5] or 1), 1) if s2 else None
-            lag2_epa   = float(s2[6]) if s2 and s2[6] is not None else None
-            lag2_cpoe  = float(s2[7]) if s2 and s2[7] is not None else None
 
             # Lag-3 raw values (N-3); None when season doesn't exist
             lag3_fpts  = float(s3[0] or 0) if s3 else None
             lag3_tgts  = int(s3[1] or 0)   if s3 else None
             lag3_cars  = int(s3[2] or 0)   if s3 else None
             lag3_pyds  = float(s3[3] or 0) if s3 else None
-            lag3_ryds  = float(s3[4] or 0) if s3 else None
-            lag3_g     = max(int(s3[5] or 1), 1) if s3 else None
 
             # EWMA (use 0 for missing seasons so signal degrades gracefully)
             ewma_fpts  = _W1 * (fpts or 0) + _W2 * (lag2_fpts or 0) + _W3 * (lag3_fpts or 0)
             ewma_tgts  = _W1 * t            + _W2 * (lag2_tgts or 0) + _W3 * (lag3_tgts or 0)
             ewma_cars  = _W1 * c            + _W2 * (lag2_cars or 0) + _W3 * (lag3_cars or 0)
             ewma_pyds  = _W1 * (pass_yards or 0) + _W2 * (lag2_pyds or 0) + _W3 * (lag3_pyds or 0)
-            ewma_ryds  = _W1 * (rush_yards or 0) + _W2 * (lag2_ryds or 0) + _W3 * (lag3_ryds or 0)
-
-            # Per-game rate features (key for normalizing injury-shortened seasons)
-            prev_fpts_per_game  = (fpts or 0) / g
-            prev_fpts_proj17    = prev_fpts_per_game * 17.0
-            pass_yards_per_game = (pass_yards or 0) / g
-            pass_tds_per_game   = (pass_tds or 0) / g
-            rush_tds_per_game   = (rush_tds or 0) / g
-
-            # Per-game projected EWMA: weights each season by per-game rate × 17 so an
-            # injury year contributes its per-game quality rather than its collapsed total.
-            proj17_cur  = prev_fpts_per_game * 17.0
-            proj17_lag2 = (lag2_fpts / lag2_g * 17.0) if lag2_g else 0.0
-            proj17_lag3 = (lag3_fpts / lag3_g * 17.0) if lag3_g else 0.0
-            ewma_fpts_proj17 = _W1 * proj17_cur + _W2 * proj17_lag2 + _W3 * proj17_lag3
 
             # Team environment (use season N team features — the prior-year env for next season)
             tf = conn.execute("""
@@ -257,10 +220,6 @@ def build_player_features(
                     lag2_fantasy_ppr, lag2_targets, lag2_carries, lag2_pass_yards,
                     lag3_fantasy_ppr, lag3_targets, lag3_carries, lag3_pass_yards,
                     ewma_fantasy_ppr, ewma_targets, ewma_carries, ewma_pass_yards,
-                    prev_fpts_per_game, prev_fpts_proj17, ewma_fpts_proj17,
-                    pass_yards_per_game, pass_tds_per_game, rush_tds_per_game,
-                    lag2_rush_yards, lag3_rush_yards, ewma_rush_yards,
-                    lag2_epa_per_play, lag2_cpoe,
                     team, team_pass_rate, team_pass_epa, team_total_plays,
                     depth_chart_pos, is_rookie, draft_round, draft_pick, draft_pick_value,
                     combine_forty, combine_vertical,
@@ -278,10 +237,8 @@ def build_player_features(
                     ?, ?, ?, ?, ?,
                     ?, ?, ?, ?, ?,
                     ?, ?, ?, ?, ?,
-                    ?, ?, ?, ?, ?,
-                    ?, ?, ?, ?, ?,
                     ?, ?, ?, ?,
-                    ?, ?, ?
+                    ?, ?
                 )
             """, [
                 gsis_id, season, position, age, experience,
@@ -298,10 +255,6 @@ def build_player_features(
                 lag2_fpts, lag2_tgts, lag2_cars, lag2_pyds,
                 lag3_fpts, lag3_tgts, lag3_cars, lag3_pyds,
                 ewma_fpts, ewma_tgts, ewma_cars, ewma_pyds,
-                prev_fpts_per_game, prev_fpts_proj17, ewma_fpts_proj17,
-                pass_yards_per_game, pass_tds_per_game, rush_tds_per_game,
-                lag2_ryds, lag3_ryds, ewma_ryds,
-                lag2_epa, lag2_cpoe,
                 team, team_pass_rate, team_pass_epa, team_plays,
                 depth, is_rookie, draft_round, draft_pick, pick_value,
                 forty, vertical,
