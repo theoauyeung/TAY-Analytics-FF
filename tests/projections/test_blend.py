@@ -37,3 +37,92 @@ def test_projections_has_blend_columns():
     assert 'consensus_projection' in cols
     assert 'blended_projection' in cols
     conn.close()
+
+
+from tay.projections.blend import blend_projections, CONSENSUS_WEIGHT, ML_WEIGHT
+
+
+def _make_blend_conn():
+    """In-memory DB with projections + consensus_projections tables."""
+    conn = duckdb.connect(':memory:')
+    conn.execute("""
+        CREATE TABLE projections (
+            gsis_id VARCHAR, season INTEGER, model_version VARCHAR,
+            mean_projection DOUBLE,
+            consensus_projection DOUBLE,
+            blended_projection DOUBLE,
+            PRIMARY KEY (gsis_id, season, model_version)
+        )
+    """)
+    conn.execute("""
+        CREATE TABLE consensus_projections (
+            gsis_id VARCHAR, season INTEGER, source VARCHAR,
+            points DOUBLE,
+            PRIMARY KEY (gsis_id, season, source)
+        )
+    """)
+    return conn
+
+
+def test_blend_weights_are_correct():
+    assert CONSENSUS_WEIGHT == 0.65
+    assert ML_WEIGHT == 0.35
+
+
+def test_blend_single_source():
+    conn = _make_blend_conn()
+    conn.execute("INSERT INTO projections VALUES ('p1', 2026, 'v1', 300.0, NULL, NULL)")
+    conn.execute("INSERT INTO consensus_projections VALUES ('p1', 2026, 'fantasypros', 350.0)")
+    count = blend_projections(conn, 2026, 'v1')
+    row = conn.execute(
+        "SELECT consensus_projection, blended_projection FROM projections WHERE gsis_id='p1'"
+    ).fetchone()
+    assert row[0] == pytest.approx(350.0)
+    assert row[1] == pytest.approx(0.65 * 350.0 + 0.35 * 300.0)
+    assert count == 1
+    conn.close()
+
+
+def test_blend_two_sources_averaged():
+    conn = _make_blend_conn()
+    conn.execute("INSERT INTO projections VALUES ('p1', 2026, 'v1', 300.0, NULL, NULL)")
+    conn.execute("INSERT INTO consensus_projections VALUES ('p1', 2026, 'fantasypros', 360.0)")
+    conn.execute("INSERT INTO consensus_projections VALUES ('p1', 2026, 'espn', 340.0)")
+    blend_projections(conn, 2026, 'v1')
+    row = conn.execute(
+        "SELECT consensus_projection, blended_projection FROM projections WHERE gsis_id='p1'"
+    ).fetchone()
+    avg_consensus = (360.0 + 340.0) / 2  # 350.0
+    assert row[0] == pytest.approx(avg_consensus)
+    assert row[1] == pytest.approx(0.65 * avg_consensus + 0.35 * 300.0)
+    conn.close()
+
+
+def test_blend_fallback_ml_only():
+    """Players with no consensus row get blended_projection = mean_projection."""
+    conn = _make_blend_conn()
+    conn.execute("INSERT INTO projections VALUES ('p1', 2026, 'v1', 200.0, NULL, NULL)")
+    # No row in consensus_projections
+    count = blend_projections(conn, 2026, 'v1')
+    row = conn.execute(
+        "SELECT consensus_projection, blended_projection FROM projections WHERE gsis_id='p1'"
+    ).fetchone()
+    assert row[0] is None
+    assert row[1] == pytest.approx(200.0)
+    assert count == 0  # 0 blended, fallback not counted
+    conn.close()
+
+
+def test_blend_mixed_players():
+    """Some players have consensus, some don't."""
+    conn = _make_blend_conn()
+    conn.execute("INSERT INTO projections VALUES ('p1', 2026, 'v1', 300.0, NULL, NULL)")
+    conn.execute("INSERT INTO projections VALUES ('p2', 2026, 'v1', 180.0, NULL, NULL)")
+    conn.execute("INSERT INTO consensus_projections VALUES ('p1', 2026, 'fantasypros', 350.0)")
+    count = blend_projections(conn, 2026, 'v1')
+    p1 = conn.execute("SELECT blended_projection FROM projections WHERE gsis_id='p1'").fetchone()[0]
+    p2 = conn.execute("SELECT blended_projection FROM projections WHERE gsis_id='p2'").fetchone()[0]
+    assert p1 == pytest.approx(0.65 * 350.0 + 0.35 * 300.0)
+    assert p2 == pytest.approx(180.0)  # fallback to ML
+    assert count == 1
+    conn.close()
