@@ -79,3 +79,15 @@ def test_blended_score_neutral_when_no_analytics(tmp_path):
     score = _blended_score(vor_rank=5, adp=5.0, analytics_rank=None)
     # When analytics_rank=None, ar = vr = 5; blend = 0.65*5 + 0.25*5 + 0.10*5 = 5.0
     assert abs(score - 5.0) < 0.01
+
+
+def test_compute_draft_value_empty_returns_zero(tmp_path):
+    """compute_draft_value returns 0 and leaves player_analytics empty when no data exists."""
+    from tay.analytics.draft_value import compute_draft_value
+    conn = get_conn(tmp_path / 'empty.duckdb')
+    init_schema(conn)
+    result = compute_draft_value(conn, season=2026, model_version='neural-v1')
+    assert result == 0
+    row_count = conn.execute('SELECT COUNT(*) FROM player_analytics').fetchone()[0]
+    assert row_count == 0
+    conn.close()

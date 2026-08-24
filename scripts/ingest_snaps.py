@@ -82,7 +82,7 @@ def fetch_snap_csv(season: int, pfr_to_gsis: dict[str, str]) -> list[dict]:
             })
         except (ValueError, KeyError):
             continue
-    return rows
+    return rows, skipped
 
 
 def ingest_snap_season(conn, weekly_rows: list[dict], season: int) -> int:
@@ -101,16 +101,19 @@ def ingest_snap_season(conn, weekly_rows: list[dict], season: int) -> int:
         by_player[gsis_id]['pct_sum']     += row['offense_pct']
         by_player[gsis_id]['games']       += 1
 
-    for gsis_id, agg in by_player.items():
-        snap_share = agg['pct_sum'] / agg['games'] if agg['games'] > 0 else None
-        conn.execute("""
-            INSERT INTO snap_counts (gsis_id, season, snap_share, total_snaps, games_played)
-            VALUES (?, ?, ?, ?, ?)
-            ON CONFLICT (gsis_id, season) DO UPDATE SET
-                snap_share   = excluded.snap_share,
-                total_snaps  = excluded.total_snaps,
-                games_played = excluded.games_played
-        """, [gsis_id, season, snap_share, agg['total_snaps'], agg['games']])
+    rows_to_insert = [
+        (gsis_id, season, agg['pct_sum'] / agg['games'] if agg['games'] > 0 else None,
+         agg['total_snaps'], agg['games'])
+        for gsis_id, agg in by_player.items()
+    ]
+    conn.executemany("""
+        INSERT INTO snap_counts (gsis_id, season, snap_share, total_snaps, games_played)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT (gsis_id, season) DO UPDATE SET
+            snap_share   = excluded.snap_share,
+            total_snaps  = excluded.total_snaps,
+            games_played = excluded.games_played
+    """, rows_to_insert)
 
     conn.commit()
     return len(by_player)
@@ -137,9 +140,9 @@ def main() -> None:
     for season in range(args.start, args.end + 1):
         print(f'Fetching snap counts for {season}...', end=' ', flush=True)
         try:
-            rows = fetch_snap_csv(season, pfr_to_gsis)
+            rows, skipped = fetch_snap_csv(season, pfr_to_gsis)
             n = ingest_snap_season(conn, rows, season)
-            print(f'{n} players')
+            print(f'{n} players ({skipped} skipped — no gsis_id mapping)')
         except Exception as e:
             print(f'FAILED: {e}')
 

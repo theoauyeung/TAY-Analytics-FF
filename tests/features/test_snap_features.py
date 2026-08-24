@@ -72,8 +72,6 @@ def test_snap_counts_table_created(tmp_path):
 
 def test_insert_snap_counts(tmp_path):
     """ingest_snap_season writes one row per player with correct snap_share."""
-    import sys, os
-    sys.path.insert(0, str(tmp_path.parent.parent / 'src'))
     from tay.db import get_conn, init_schema
     from scripts.ingest_snaps import ingest_snap_season
 

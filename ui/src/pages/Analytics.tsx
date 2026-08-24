@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { fetchDraftValue, type DraftValueData, type UndervaluedPlayer } from '../api/analytics'
 import { Spinner } from '../components/ui/Spinner'
 
@@ -16,20 +16,14 @@ function EfficiencyBadge({ factor }: { factor: number }) {
 }
 
 export function Analytics() {
-  const [data, setData] = useState<DraftValueData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { data, isLoading, error } = useQuery<DraftValueData>({
+    queryKey: ['analytics', 'draft-value'],
+    queryFn: () => fetchDraftValue(),
+  })
 
-  useEffect(() => {
-    fetchDraftValue()
-      .then(setData)
-      .catch(e => setError(e.message))
-      .finally(() => setLoading(false))
-  }, [])
-
-  if (loading) return <div className="flex items-center justify-center h-64"><Spinner size={32} /></div>
-  if (error)   return <div className="p-6 text-red-400">Error: {error}</div>
-  if (!data)   return null
+  if (isLoading) return <div className="flex items-center justify-center h-64"><Spinner size={32} /></div>
+  if (error)     return <div className="p-6 text-red-400">Error: {error?.message}</div>
+  if (!data)     return null
 
   const noData = data.undervalued.length === 0
 

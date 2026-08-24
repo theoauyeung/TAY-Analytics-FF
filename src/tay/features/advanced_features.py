@@ -115,6 +115,18 @@ def _compute_consistency(
             WHERE rush_attempt = 1 AND rusher_id IS NOT NULL
               AND season_type = 'REG' AND season = ?
             GROUP BY rusher_id, week
+            UNION ALL
+            SELECT passer_id AS gsis_id,
+                   week,
+                   SUM(
+                       CASE WHEN complete_pass = 1 THEN yards_gained * 0.04 ELSE 0 END
+                     + CASE WHEN touchdown = 1 AND complete_pass = 1 THEN 6.0 ELSE 0 END
+                     + CASE WHEN interception = 1 THEN -2.0 ELSE 0 END
+                   ) AS fpts
+            FROM play_by_play
+            WHERE pass_attempt = 1 AND passer_id IS NOT NULL
+              AND season_type = 'REG' AND season = ?
+            GROUP BY passer_id, week
         ),
         combined AS (
             SELECT gsis_id, week, SUM(fpts) AS total_fpts
@@ -136,7 +148,7 @@ def _compute_consistency(
         FROM consistency c
         WHERE player_features.gsis_id = c.gsis_id
           AND player_features.season  = ?
-    """, [prior_season, prior_season, target_season])
+    """, [prior_season, prior_season, prior_season, target_season])
 
 
 def _compute_sos(

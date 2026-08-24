@@ -283,6 +283,74 @@ def test_sos_pts_allowed(sos_conn):
     assert abs(row[0] - 9.75) < 0.5  # allow small float variance
 
 
+@pytest.fixture
+def qb_consist_conn(tmp_path):
+    """QB with 3 weeks of passing plays; should produce non-NULL consistency features."""
+    c = get_conn(tmp_path / 'qb_consist.duckdb')
+    init_schema(c)
+
+    plays = []
+    # Week 1: 20 completions, 8 yards each, 1 TD, 0 INT
+    # fpts = 20*8*0.04 + 6 = 6.4 + 6 = 12.4
+    for i in range(20):
+        plays.append((f'w1_{i}', 'g1', 2025, 1, 'REG', 'KC', 'DEN', 'pass',
+                      1, None, 'qb1', 0.0, 8.0, 1, 0, 0, 0))
+    plays[0] = ('w1_td', 'g1', 2025, 1, 'REG', 'KC', 'DEN', 'pass',
+                1, None, 'qb1', 0.0, 8.0, 1, 1, 0, 0)
+
+    # Week 2: 30 completions, 10 yards each, 3 TDs, 0 INT
+    # fpts = 30*10*0.04 + 3*6 = 12 + 18 = 30.0 (boom)
+    for i in range(30):
+        plays.append((f'w2_{i}', 'g2', 2025, 2, 'REG', 'KC', 'LV', 'pass',
+                      1, None, 'qb1', 0.0, 10.0, 1, 0, 0, 0))
+    plays[-1] = ('w2_td1', 'g2', 2025, 2, 'REG', 'KC', 'LV', 'pass',
+                 1, None, 'qb1', 0.0, 10.0, 1, 1, 0, 0)
+    plays[-2] = ('w2_td2', 'g2', 2025, 2, 'REG', 'KC', 'LV', 'pass',
+                 1, None, 'qb1', 0.0, 10.0, 1, 1, 0, 0)
+    plays[-3] = ('w2_td3', 'g2', 2025, 2, 'REG', 'KC', 'LV', 'pass',
+                 1, None, 'qb1', 0.0, 10.0, 1, 1, 0, 0)
+
+    # Week 3: 15 completions, 5 yards each, 0 TDs, 1 INT
+    # fpts = 15*5*0.04 + 0 - 2 = 3 - 2 = 1.0 (floor)
+    for i in range(15):
+        plays.append((f'w3_{i}', 'g3', 2025, 3, 'REG', 'KC', 'LAC', 'pass',
+                      1, None, 'qb1', 0.0, 5.0, 1, 0, 0, 0))
+    plays.append(('w3_int', 'g3', 2025, 3, 'REG', 'KC', 'LAC', 'pass',
+                  1, None, 'qb1', 0.0, 0.0, 0, 0, 1, 0))
+
+    c.executemany("""
+        INSERT INTO play_by_play
+            (play_id, game_id, season, week, season_type, posteam, defteam, play_type,
+             pass_attempt, receiver_id, passer_id, air_yards, yards_gained,
+             complete_pass, touchdown, interception, rush_attempt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, plays)
+
+    c.execute("""
+        INSERT INTO player_features (gsis_id, season, position, team)
+        VALUES ('qb1', 2026, 'QB', 'KC')
+    """)
+    yield c
+    c.close()
+
+
+def test_qb_consistency_not_null(qb_consist_conn):
+    """QBs must get non-NULL weekly_fpts_std and boom_rate from the passer_id branch."""
+    from tay.features.advanced_features import _migrate_advanced_features, _compute_consistency
+    _migrate_advanced_features(qb_consist_conn)
+    _compute_consistency(qb_consist_conn, prior_season=2025, target_season=2026)
+
+    row = qb_consist_conn.execute(
+        "SELECT weekly_fpts_std, boom_rate FROM player_features WHERE gsis_id = 'qb1' AND season = 2026"
+    ).fetchone()
+    assert row is not None
+    assert row[0] is not None, 'weekly_fpts_std should not be NULL for QBs'
+    assert row[0] > 0, 'weekly_fpts_std should be positive (3 different weekly totals)'
+    assert row[1] is not None, 'boom_rate should not be NULL for QBs'
+    # Week 2 (30 pts) is the only boom week (>=20) out of 3 → 1/3
+    assert abs(row[1] - 1 / 3) < 0.01
+
+
 def test_postseason_excluded(tmp_path):
     """Playoff plays (season_type != REG) must not count toward target share."""
     c = get_conn(tmp_path / 'post_test.duckdb')
