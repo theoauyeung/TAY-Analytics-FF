@@ -95,7 +95,7 @@ def compute_draft_value(
             efficiency_factor = 0.0
         output_rows.append((gsis_id, season, efficiency_factor, bucket, pts_above, n))
 
-    # Upsert into player_analytics (INSERT OR REPLACE semantics via DELETE + INSERT)
+    # Upsert into player_analytics — ON CONFLICT preserves created_at
     conn.executemany(
         """
         INSERT INTO player_analytics
