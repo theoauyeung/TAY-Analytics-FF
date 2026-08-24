@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import {
   BarChart3, Users, Trophy,
-  PieChart, Settings, Zap,
+  PieChart, Settings, Zap, TrendingUp,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { to: '/mock-draft', label: 'Mock Draft',        icon: Trophy },
   { to: '/players',    label: 'Players',           icon: Users },
   { to: '/roster',     label: 'Roster Analyzer',  icon: PieChart },
+  { to: '/analytics',  label: 'Analytics',         icon: TrendingUp },
   { to: '/settings',   label: 'Settings',          icon: Settings },
 ]
 

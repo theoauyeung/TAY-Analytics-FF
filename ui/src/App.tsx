@@ -6,6 +6,7 @@ import Players from './pages/Players'
 import MockDraft from './pages/MockDraft'
 import RosterAnalyzer from './pages/RosterAnalyzer'
 import Settings from './pages/Settings'
+import { Analytics } from './pages/Analytics'
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
         <Route path="players" element={<Players />} />
         <Route path="mock-draft" element={<MockDraft />} />
         <Route path="roster" element={<RosterAnalyzer />} />
+        <Route path="analytics" element={<Analytics />} />
         <Route path="settings" element={<Settings />} />
       </Route>
     </Routes>
