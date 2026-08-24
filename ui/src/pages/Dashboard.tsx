@@ -30,7 +30,7 @@ export default function Dashboard() {
 
   const positionLeaders: Record<string, Ranking> = Object.fromEntries(
     (['QB', 'RB', 'WR', 'TE'] as const)
-      .map(pos => [pos, rankings.find(r => r.player.position === pos)])
+      .map(pos => [pos, rankings.find(r => r.player.position === pos)] as [string, Ranking | undefined])
       .filter((entry): entry is [string, Ranking] => entry[1] !== undefined)
   )
 

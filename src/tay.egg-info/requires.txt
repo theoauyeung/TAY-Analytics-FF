@@ -8,6 +8,10 @@ lxml>=5.2
 tqdm>=4.66
 rich>=13
 python-dotenv>=1.0
+torch>=2.3
+fastapi>=0.141
+uvicorn>=0.52
+httpx2>=0.28
 
 [dev]
 pytest>=8

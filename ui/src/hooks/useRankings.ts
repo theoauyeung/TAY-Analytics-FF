@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import type { Ranking, RankingFilters } from '../types'
+import type { RankingFilters } from '../types'
 import { fetchRankings } from '../api/rankings'
 
 export function useRankings(filters: RankingFilters) {

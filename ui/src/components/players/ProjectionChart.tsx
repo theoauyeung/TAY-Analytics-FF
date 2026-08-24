@@ -40,7 +40,7 @@ export function ProjectionChart({ player }: Props) {
             contentStyle={{ background: '#1C2230', border: '1px solid #2D3748', borderRadius: 8 }}
             labelStyle={{ color: '#E8EDF5', fontSize: 12 }}
             itemStyle={{ color: '#60B4FF', fontSize: 12 }}
-            formatter={(v: number) => [`${v} pts`, 'Projection']}
+            formatter={(v) => [`${v} pts`, 'Projection']}
           />
           <Bar dataKey="value" radius={[3, 3, 0, 0]}>
             {data.map((_, i) => (

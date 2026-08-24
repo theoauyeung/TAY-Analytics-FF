@@ -1,8 +1,6 @@
-import { useMemo } from 'react'
 import type { Ranking, ColumnKey } from '../../types'
 import { COLUMN_LABELS } from '../../types'
 import { PlayerRow } from './PlayerRow'
-import { TierSeparator } from './TierSeparator'
 import { Spinner } from '../ui/Spinner'
 
 interface Props {
@@ -13,20 +11,7 @@ interface Props {
 }
 
 export function RankingsTable({ rankings, visibleColumns, onPlayerClick, isLoading }: Props) {
-  // Build rows with tier separators injected between tier groups
-  const rows = useMemo(() => {
-    const result: Array<{ type: 'player'; ranking: Ranking } | { type: 'tier'; tier: Ranking['tier'] }> = []
-    let lastTier = 0
-    for (const ranking of rankings) {
-      if (ranking.tier.number !== lastTier) {
-        result.push({ type: 'tier', tier: ranking.tier })
-        lastTier = ranking.tier.number
-      }
-      result.push({ type: 'player', ranking })
-    }
-    return result
-  }, [rankings])
-
+  const cols = visibleColumns.filter(c => c !== 'rank' && c !== 'player' && c !== 'tier')
 
   if (isLoading) {
     return (
@@ -43,7 +28,7 @@ export function RankingsTable({ rankings, visibleColumns, onPlayerClick, isLoadi
           <tr>
             <th className="py-2.5 px-3 text-center text-xs font-semibold text-text-muted w-12">RK</th>
             <th className="py-2.5 px-3 text-left text-xs font-semibold text-text-muted min-w-[200px] sticky left-0 bg-bg-secondary">PLAYER</th>
-            {visibleColumns.filter((c) => c !== 'rank' && c !== 'player').map((col) => (
+            {cols.map(col => (
               <th key={col} className="py-2.5 px-3 text-right text-xs font-semibold text-text-muted whitespace-nowrap">
                 {COLUMN_LABELS[col]}
               </th>
@@ -51,18 +36,14 @@ export function RankingsTable({ rankings, visibleColumns, onPlayerClick, isLoadi
           </tr>
         </thead>
         <tbody className="bg-bg-card">
-          {rows.map((row) =>
-            row.type === 'tier' ? (
-              <TierSeparator key={`tier-${row.tier.number}`} tier={row.tier} />
-            ) : (
-              <PlayerRow
-                key={row.ranking.player.id}
-                ranking={row.ranking}
-                visibleColumns={visibleColumns}
-                onClick={() => onPlayerClick(row.ranking.player.id)}
-              />
-            )
-          )}
+          {rankings.map(ranking => (
+            <PlayerRow
+              key={ranking.player.id}
+              ranking={ranking}
+              visibleColumns={visibleColumns.filter(c => c !== 'tier')}
+              onClick={() => onPlayerClick(ranking.player.id)}
+            />
+          ))}
         </tbody>
       </table>
     </div>
