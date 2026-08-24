@@ -10,6 +10,7 @@ def _make_conn():
         CREATE TABLE projections (
             gsis_id VARCHAR, season INTEGER, model_version VARCHAR,
             mean_projection DOUBLE,
+            blended_projection DOUBLE,
             vor DOUBLE, vor_rank INTEGER,
             PRIMARY KEY (gsis_id, season, model_version)
         )
@@ -69,4 +70,33 @@ def test_vor_rank_all_rows_ranked():
         "SELECT COUNT(*) FROM projections WHERE season=2026 AND vor_rank IS NULL"
     ).fetchone()[0]
     assert null_ranks == 0
+    conn.close()
+
+
+def test_vor_uses_blended_projection_when_present():
+    """VOR should use blended_projection, not mean_projection, when available."""
+    conn = duckdb.connect(':memory:')
+    conn.execute("CREATE TABLE players (gsis_id VARCHAR PRIMARY KEY, position VARCHAR)")
+    conn.execute("""
+        CREATE TABLE projections (
+            gsis_id VARCHAR, season INTEGER, model_version VARCHAR,
+            mean_projection DOUBLE,
+            blended_projection DOUBLE,
+            vor DOUBLE, vor_rank INTEGER,
+            PRIMARY KEY (gsis_id, season, model_version)
+        )
+    """)
+    conn.execute("INSERT INTO players VALUES ('rb1', 'RB')")
+    conn.execute("INSERT INTO players VALUES ('rb2', 'RB')")
+    # rb1 has blended > mean; rb2 has no blended
+    conn.execute("INSERT INTO projections (gsis_id, season, model_version, mean_projection, blended_projection) VALUES ('rb1', 2026, 'v1', 200.0, 250.0)")
+    conn.execute("INSERT INTO projections (gsis_id, season, model_version, mean_projection, blended_projection) VALUES ('rb2', 2026, 'v1', 150.0, NULL)")
+    repl = {'RB': 150.0}
+    compute_vor(conn, 2026, 'v1', repl)
+    rb1_vor = conn.execute("SELECT vor FROM projections WHERE gsis_id='rb1'").fetchone()[0]
+    rb2_vor = conn.execute("SELECT vor FROM projections WHERE gsis_id='rb2'").fetchone()[0]
+    # rb1: (250 - 150) * 1.0 = 100.0  (uses blended_projection)
+    assert rb1_vor == pytest.approx(100.0)
+    # rb2: (150 - 150) * 1.0 = 0.0  (falls back to mean_projection)
+    assert rb2_vor == pytest.approx(0.0)
     conn.close()
