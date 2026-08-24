@@ -15,6 +15,9 @@ QB_FEATURES: list[str] = [
     'ewma_fantasy_ppr', 'ewma_pass_yards',
     'team_pass_rate', 'team_pass_epa', 'team_total_plays',
     'draft_pick_value',
+    'weekly_fpts_std',
+    'boom_rate',
+    'sos_pts_allowed',
 ]
 
 RB_FEATURES: list[str] = [
@@ -32,6 +35,11 @@ RB_FEATURES: list[str] = [
     'team_pass_rate', 'team_total_plays',
     'incoming_vacated_carries',
     'depth_chart_pos', 'draft_pick_value',
+    'target_share',
+    'weekly_fpts_std',
+    'boom_rate',
+    'floor_rate',
+    'sos_pts_allowed',
 ]
 
 WR_FEATURES: list[str] = [
@@ -50,6 +58,13 @@ WR_FEATURES: list[str] = [
     'team_pass_rate', 'team_pass_epa', 'team_total_plays',
     'incoming_vacated_targets',
     'depth_chart_pos', 'draft_pick_value',
+    'target_share',
+    'air_yards_share',
+    'wopr',
+    'weekly_fpts_std',
+    'boom_rate',
+    'floor_rate',
+    'sos_pts_allowed',
 ]
 
 TE_FEATURES: list[str] = [
@@ -67,6 +82,13 @@ TE_FEATURES: list[str] = [
     'team_pass_rate', 'team_pass_epa', 'team_total_plays',
     'incoming_vacated_targets',
     'depth_chart_pos', 'draft_pick_value',
+    'target_share',
+    'air_yards_share',
+    'wopr',
+    'weekly_fpts_std',
+    'boom_rate',
+    'floor_rate',
+    'sos_pts_allowed',
 ]
 
 POSITION_FEATURES: dict[str, list[str]] = {
