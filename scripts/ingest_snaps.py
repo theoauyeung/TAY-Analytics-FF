@@ -3,9 +3,13 @@
 
 Usage:
     uv run python scripts/ingest_snaps.py --start 2016 --end 2025
+
+The nflverse snap_counts CSV uses pfr_player_id (PFR format, e.g. BrowSp00).
+We download the nflverse players crosswalk to map pfr_id -> gsis_id.
 """
 from __future__ import annotations
 import argparse
+import csv
 import io
 import sys
 from pathlib import Path
@@ -21,25 +25,60 @@ _SNAP_CSV_URL = (
     'snap_counts/snap_counts_{season}.csv'
 )
 
+_PLAYERS_CSV_URL = (
+    'https://github.com/nflverse/nflverse-data/releases/download/'
+    'players/players.csv'
+)
 
-def fetch_snap_csv(season: int) -> list[dict]:
-    """Download nflverse snap count CSV for a season; return list of row dicts."""
+
+def fetch_pfr_to_gsis_map() -> dict[str, str]:
+    """Download nflverse players CSV and return {pfr_id: gsis_id} mapping."""
+    resp = requests.get(_PLAYERS_CSV_URL, timeout=60)
+    resp.raise_for_status()
+    reader = csv.DictReader(io.StringIO(resp.text))
+    mapping: dict[str, str] = {}
+    for row in reader:
+        pfr_id = row.get('pfr_id', '').strip()
+        gsis_id = row.get('gsis_id', '').strip()
+        if pfr_id and gsis_id:
+            mapping[pfr_id] = gsis_id
+    return mapping
+
+
+def fetch_snap_csv(season: int, pfr_to_gsis: dict[str, str]) -> list[dict]:
+    """Download nflverse snap count CSV for a season; return list of row dicts.
+
+    Rows are keyed by gsis_id (mapped from pfr_player_id).
+    Rows where no gsis_id mapping exists are skipped.
+    """
     url = _SNAP_CSV_URL.format(season=season)
     resp = requests.get(url, timeout=60)
     resp.raise_for_status()
-    import csv
     reader = csv.DictReader(io.StringIO(resp.text))
     rows = []
+    skipped = 0
     for row in reader:
-        if not row.get('player_id') or not row.get('offense_pct'):
+        pfr_id = row.get('pfr_player_id', '').strip()
+        offense_pct_raw = row.get('offense_pct', '').strip()
+        # Only keep offensive skill players with actual snap data
+        if not pfr_id or not offense_pct_raw:
+            continue
+        try:
+            offense_pct = float(offense_pct_raw)
+        except ValueError:
+            continue
+        # Map to gsis_id; skip if not found
+        gsis_id = pfr_to_gsis.get(pfr_id)
+        if not gsis_id:
+            skipped += 1
             continue
         try:
             rows.append({
-                'player_id':     row['player_id'],
+                'player_id':     gsis_id,
                 'season':        int(row['season']),
                 'week':          int(row['week']),
                 'offense_snaps': int(float(row.get('offense_snaps') or 0)),
-                'offense_pct':   float(row['offense_pct']),
+                'offense_pct':   offense_pct,
             })
         except (ValueError, KeyError):
             continue
@@ -86,10 +125,19 @@ def main() -> None:
     conn = get_conn()
     init_schema(conn)
 
+    print('Downloading player ID crosswalk (pfr_id -> gsis_id)...', flush=True)
+    try:
+        pfr_to_gsis = fetch_pfr_to_gsis_map()
+        print(f'  {len(pfr_to_gsis)} mappings loaded.')
+    except Exception as e:
+        print(f'FAILED to load player crosswalk: {e}')
+        conn.close()
+        return
+
     for season in range(args.start, args.end + 1):
         print(f'Fetching snap counts for {season}...', end=' ', flush=True)
         try:
-            rows = fetch_snap_csv(season)
+            rows = fetch_snap_csv(season, pfr_to_gsis)
             n = ingest_snap_season(conn, rows, season)
             print(f'{n} players')
         except Exception as e:
