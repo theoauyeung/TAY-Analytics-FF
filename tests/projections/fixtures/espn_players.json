@@ -1,0 +1,70 @@
+{
+  "players": [
+    {
+      "id": 3054211,
+      "playerPoolEntry": {
+        "player": {
+          "fullName": "Patrick Mahomes",
+          "stats": [
+            {
+              "statSourceId": 1,
+              "scoringPeriodId": 0,
+              "statSplitTypeId": 0,
+              "stats": {
+                "3": 4800.0,
+                "4": 36.0,
+                "20": 10.0,
+                "24": 280.0,
+                "25": 3.0,
+                "41": 0.0,
+                "42": 0.0,
+                "43": 0.0
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 3916387,
+      "playerPoolEntry": {
+        "player": {
+          "fullName": "Ja'Marr Chase",
+          "stats": [
+            {
+              "statSourceId": 1,
+              "scoringPeriodId": 0,
+              "statSplitTypeId": 0,
+              "stats": {
+                "3": 0.0,
+                "4": 0.0,
+                "20": 0.0,
+                "24": 25.0,
+                "25": 0.0,
+                "41": 90.0,
+                "42": 1350.0,
+                "43": 10.0
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 9999999,
+      "playerPoolEntry": {
+        "player": {
+          "fullName": "No Stats Player",
+          "stats": [
+            {
+              "statSourceId": 0,
+              "scoringPeriodId": 0,
+              "statSplitTypeId": 0,
+              "stats": {"3": 1000.0}
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
