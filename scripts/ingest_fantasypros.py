@@ -100,7 +100,7 @@ def fetch_and_scrape(position: str) -> list[dict]:
     return scrape_position(resp.text, position)
 
 
-def ingest_fantasypros(conn, season: int) -> dict:
+def ingest_fantasypros(conn, season: int, model_version: str = 'neural-v1') -> dict:
     """Scrape FP, match names, upsert consensus_projections, blend, run VOR."""
     # Load all players for name matching
     db_players_raw = conn.execute(
@@ -150,14 +150,14 @@ def ingest_fantasypros(conn, season: int) -> dict:
              points)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT (gsis_id, season, source) DO UPDATE SET
-            pass_yards    = excluded.pass_yards,
-            pass_tds      = excluded.pass_tds,
-            interceptions = excluded.interceptions,
-            rush_yards    = excluded.rush_yards,
-            rush_tds      = excluded.rush_tds,
-            receptions    = excluded.receptions,
-            rec_yards     = excluded.rec_yards,
-            rec_tds       = excluded.rec_tds,
+            pass_yards    = COALESCE(excluded.pass_yards,    consensus_projections.pass_yards),
+            pass_tds      = COALESCE(excluded.pass_tds,      consensus_projections.pass_tds),
+            interceptions = COALESCE(excluded.interceptions, consensus_projections.interceptions),
+            rush_yards    = COALESCE(excluded.rush_yards,    consensus_projections.rush_yards),
+            rush_tds      = COALESCE(excluded.rush_tds,      consensus_projections.rush_tds),
+            receptions    = COALESCE(excluded.receptions,    consensus_projections.receptions),
+            rec_yards     = COALESCE(excluded.rec_yards,     consensus_projections.rec_yards),
+            rec_tds       = COALESCE(excluded.rec_tds,       consensus_projections.rec_tds),
             points        = excluded.points,
             scraped_at    = current_timestamp
     """, rows_to_upsert)
@@ -165,12 +165,12 @@ def ingest_fantasypros(conn, season: int) -> dict:
     print(f'Upserted {matched} consensus rows ({unmatched} unmatched).', flush=True)
 
     print('Blending projections...', flush=True)
-    blended = blend_projections(conn, season, 'neural-v1')
+    blended = blend_projections(conn, season, model_version)
     print(f'  {blended} players received a blended projection.', flush=True)
 
     print('Recomputing VOR...', flush=True)
     config = ReplacementConfig()
-    result = run_valuation(conn, season=season, model_version='neural-v1', config=config)
+    result = run_valuation(conn, season=season, model_version=model_version, config=config)
 
     return {
         'matched': matched,
@@ -183,11 +183,12 @@ def ingest_fantasypros(conn, season: int) -> dict:
 def main() -> None:
     p = argparse.ArgumentParser(description='Ingest FantasyPros consensus projections')
     p.add_argument('--season', type=int, default=2026)
+    p.add_argument('--model-version', type=str, default='neural-v1')
     args = p.parse_args()
 
     conn = get_conn()
     init_schema(conn)
-    result = ingest_fantasypros(conn, args.season)
+    result = ingest_fantasypros(conn, args.season, args.model_version)
     conn.close()
     print(f"\nDone. matched={result['matched']}, unmatched={result['unmatched']}, "
           f"blended={result['blended']}, vor_rows={result['vor_rows']}")

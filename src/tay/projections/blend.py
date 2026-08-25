@@ -18,6 +18,13 @@ def blend_projections(
     Falls back to mean_projection when no consensus row exists for a player.
     """
     conn.execute("""
+        UPDATE projections
+        SET consensus_projection = NULL,
+            blended_projection   = NULL
+        WHERE season = ? AND model_version = ?
+    """, [season, model_version])
+
+    conn.execute("""
         WITH cp_agg AS (
             SELECT gsis_id, AVG(points) AS avg_pts
             FROM consensus_projections
