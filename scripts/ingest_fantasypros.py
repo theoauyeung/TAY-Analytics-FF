@@ -159,7 +159,7 @@ def ingest_fantasypros(conn, season: int, model_version: str = 'neural-v1') -> d
             rec_yards     = COALESCE(excluded.rec_yards,     consensus_projections.rec_yards),
             rec_tds       = COALESCE(excluded.rec_tds,       consensus_projections.rec_tds),
             points        = excluded.points,
-            scraped_at    = current_timestamp
+            scraped_at    = NOW()
     """, rows_to_upsert)
     conn.commit()
     print(f'Upserted {matched} consensus rows ({unmatched} unmatched).', flush=True)

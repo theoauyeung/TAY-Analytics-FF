@@ -149,7 +149,7 @@ def ingest_espn(conn, season: int) -> dict:
             rec_yards     = excluded.rec_yards,
             rec_tds       = excluded.rec_tds,
             points        = excluded.points,
-            scraped_at    = current_timestamp
+            scraped_at    = NOW()
     """, rows_to_upsert)
     conn.commit()
     print(f'  Upserted {matched} ESPN rows ({unmatched} unmatched).', flush=True)
