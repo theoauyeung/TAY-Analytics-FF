@@ -396,9 +396,41 @@ CREATE TABLE IF NOT EXISTS consensus_projections (
 )
 """
 
+COACHES = """
+CREATE TABLE IF NOT EXISTS coaches (
+    team        VARCHAR NOT NULL,
+    season      INTEGER NOT NULL,
+    coach_type  VARCHAR NOT NULL,
+    full_name   VARCHAR NOT NULL,
+    PRIMARY KEY (team, season, coach_type)
+)
+"""
+
+OC_FEATURES = """
+CREATE TABLE IF NOT EXISTS oc_features (
+    oc_name               VARCHAR NOT NULL,
+    as_of_season          INTEGER NOT NULL,
+    hist_wr1_target_share DOUBLE,
+    hist_air_yards_pct    DOUBLE,
+    hist_rb_target_share  DOUBLE,
+    tenure_at_team        INTEGER,
+    is_rookie_oc          BOOLEAN,
+    PRIMARY KEY (oc_name, as_of_season)
+)
+"""
+
+SCHEME_CLUSTERS = """
+CREATE TABLE IF NOT EXISTS scheme_clusters (
+    team        VARCHAR NOT NULL,
+    season      INTEGER NOT NULL,
+    cluster_id  INTEGER NOT NULL,
+    PRIMARY KEY (team, season)
+)
+"""
+
 ALL_TABLES = [
     PLAYERS, PLAY_BY_PLAY, PLAYER_SEASON_STATS, TEAM_SEASON_STATS,
     ROSTERS, DRAFT_PICKS, COMBINE_DATA, ADP, PROJECTIONS, DRAFT_SESSIONS,
     PLAYER_FEATURES, TEAM_FEATURES, SNAP_COUNTS, PLAYER_ANALYTICS,
-    CONSENSUS_PROJECTIONS,
+    CONSENSUS_PROJECTIONS, COACHES, OC_FEATURES, SCHEME_CLUSTERS,
 ]

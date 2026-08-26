@@ -20,4 +20,8 @@ def init_schema(conn: duckdb.DuckDBPyConnection) -> None:
     # Idempotent migrations for existing databases
     conn.execute("ALTER TABLE projections ADD COLUMN IF NOT EXISTS consensus_projection DOUBLE")
     conn.execute("ALTER TABLE projections ADD COLUMN IF NOT EXISTS blended_projection DOUBLE")
+    conn.execute("ALTER TABLE projections ADD COLUMN IF NOT EXISTS projected_target_share DOUBLE")
+    conn.execute("ALTER TABLE projections ADD COLUMN IF NOT EXISTS projected_carry_share DOUBLE")
+    conn.execute("ALTER TABLE projections ADD COLUMN IF NOT EXISTS projected_rec_share DOUBLE")
+    conn.execute("ALTER TABLE projections ADD COLUMN IF NOT EXISTS projected_pass_att_per_game DOUBLE")
     conn.commit()
