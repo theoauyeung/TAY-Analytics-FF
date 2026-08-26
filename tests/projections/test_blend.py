@@ -39,7 +39,10 @@ def test_projections_has_blend_columns():
     conn.close()
 
 
-from tay.projections.blend import blend_projections, CONSENSUS_WEIGHT, ML_WEIGHT
+from tay.projections.blend import (
+    blend_projections, CONSENSUS_WEIGHT, ML_WEIGHT,
+    TEAM_CHANGE_CONSENSUS_WEIGHT, TEAM_CHANGE_ML_WEIGHT,
+)
 
 
 def _make_blend_conn():
@@ -59,6 +62,13 @@ def _make_blend_conn():
             gsis_id VARCHAR, season INTEGER, source VARCHAR,
             points DOUBLE,
             PRIMARY KEY (gsis_id, season, source)
+        )
+    """)
+    conn.execute("CREATE TABLE players (gsis_id VARCHAR PRIMARY KEY, team VARCHAR)")
+    conn.execute("""
+        CREATE TABLE player_season_stats (
+            gsis_id VARCHAR, season INTEGER, team VARCHAR,
+            PRIMARY KEY (gsis_id, season)
         )
     """)
     return conn
@@ -125,4 +135,36 @@ def test_blend_mixed_players():
     assert p1 == pytest.approx(0.65 * 350.0 + 0.35 * 300.0)
     assert p2 == pytest.approx(180.0)  # fallback to ML
     assert count == 1
+    conn.close()
+
+
+def test_blend_team_changer_gets_higher_consensus_weight():
+    """Players who switched teams get 85% consensus weight instead of 65%."""
+    conn = _make_blend_conn()
+    conn.execute("INSERT INTO players VALUES ('p1', 'TeamB')")
+    conn.execute("INSERT INTO player_season_stats VALUES ('p1', 2025, 'TeamA')")
+    conn.execute("INSERT INTO projections VALUES ('p1', 2026, 'v1', 200.0, NULL, NULL)")
+    conn.execute("INSERT INTO consensus_projections VALUES ('p1', 2026, 'fantasypros', 150.0)")
+    blend_projections(conn, 2026, 'v1')
+    row = conn.execute(
+        "SELECT blended_projection FROM projections WHERE gsis_id='p1'"
+    ).fetchone()
+    assert row[0] == pytest.approx(
+        TEAM_CHANGE_CONSENSUS_WEIGHT * 150.0 + TEAM_CHANGE_ML_WEIGHT * 200.0
+    )
+    conn.close()
+
+
+def test_blend_same_team_uses_normal_weights():
+    """Players who stayed on the same team get the standard 65/35 blend."""
+    conn = _make_blend_conn()
+    conn.execute("INSERT INTO players VALUES ('p1', 'TeamA')")
+    conn.execute("INSERT INTO player_season_stats VALUES ('p1', 2025, 'TeamA')")
+    conn.execute("INSERT INTO projections VALUES ('p1', 2026, 'v1', 200.0, NULL, NULL)")
+    conn.execute("INSERT INTO consensus_projections VALUES ('p1', 2026, 'fantasypros', 150.0)")
+    blend_projections(conn, 2026, 'v1')
+    row = conn.execute(
+        "SELECT blended_projection FROM projections WHERE gsis_id='p1'"
+    ).fetchone()
+    assert row[0] == pytest.approx(CONSENSUS_WEIGHT * 150.0 + ML_WEIGHT * 200.0)
     conn.close()
