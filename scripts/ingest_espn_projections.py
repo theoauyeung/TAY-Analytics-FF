@@ -35,14 +35,14 @@ _ESPN_HEADERS = {
     'User-Agent': 'Mozilla/5.0',
 }
 
-# ESPN numeric stat IDs → our field names
+# ESPN numeric stat IDs → our field names (verified against live API 2026-08-25)
 _STAT_MAP = {
     '3':  'pass_yards',
     '4':  'pass_tds',
     '20': 'interceptions',
     '24': 'rush_yards',
     '25': 'rush_tds',
-    '41': 'receptions',
+    '53': 'receptions',
     '42': 'rec_yards',
     '43': 'rec_tds',
 }
@@ -61,21 +61,23 @@ def _ppr(row: dict) -> float:
     )
 
 
-def parse_espn_response(data: dict) -> list[dict]:
+def parse_espn_response(data: list, season: int = 2026) -> list[dict]:
     """Extract projected stats from ESPN API JSON.
 
-    Only includes players that have a statSourceId=1 (projected) entry.
-    Returns list of dicts with espn_id (str) and stat fields.
+    The ESPN API returns a flat list of player dicts (not {"players": [...]}).
+    Only includes players with a statSourceId=1, statSplitTypeId=0 (full-season
+    projected) entry. Returns list of dicts with espn_id (str) and stat fields.
     """
     rows = []
-    for player_entry in data.get('players', []):
+    for player_entry in data:
         espn_id = str(player_entry.get('id', ''))
-        player = player_entry.get('playerPoolEntry', {}).get('player', {})
-        stats_list = player.get('stats', [])
-        # Find the projected full-season stat entry
+        stats_list = player_entry.get('stats', [])
         proj_stats = next(
             (s for s in stats_list
-             if s.get('statSourceId') == 1 and s.get('scoringPeriodId') == 0),
+             if s.get('statSourceId') == 1
+             and s.get('statSplitTypeId') == 0
+             and s.get('scoringPeriodId') == 0
+             and s.get('seasonId') == season),
             None,
         )
         if proj_stats is None:
@@ -97,7 +99,7 @@ def ingest_espn(conn, season: int) -> dict:
     resp.raise_for_status()
     data = resp.json()
 
-    rows = parse_espn_response(data)
+    rows = parse_espn_response(data, season)
     print(f'  Parsed {len(rows)} players with projected stats.', flush=True)
 
     # Build espn_id → gsis_id map from players table
