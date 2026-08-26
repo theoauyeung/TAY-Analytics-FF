@@ -57,13 +57,14 @@ def build_stage1_features(
 
         # All players active in prior season on skill positions
         # Note: players table has no 'experience' column; compute from draft_year in Python
-        players = conn.execute("""
+        pos_sql = ', '.join(f"'{p}'" for p in positions)
+        players = conn.execute(f"""
             SELECT
                 p.gsis_id, p.position, s.team,
                 p.birth_date, p.draft_year, p.draft_round, p.draft_pick
             FROM player_season_stats s
             JOIN players p ON p.gsis_id = s.gsis_id
-            WHERE s.season = ? AND p.position IN ('QB', 'RB', 'WR', 'TE')
+            WHERE s.season = ? AND p.position IN ({pos_sql})
         """, [prior]).fetchall()
 
         for (gsis_id, position, prior_team, birth_date, draft_year, draft_round,
@@ -141,12 +142,15 @@ def build_stage1_features(
             ts2 = eff(s2, 0, 13)
             ts3 = eff(s3, 0, 13)
 
-            # --- Labels (prior season actuals, used as training targets) ---
-            # For training: labels = season N-1 actuals (what the player achieved last season).
-            # For inference rows (no current season data), these still reflect prior performance.
-            # If season N actuals exist, prefer those; otherwise fall back to prior.
+            # --- Labels (season N actuals, used as training targets) ---
+            # For training rows: season N data must exist; labels are None for inference rows.
+            # No fallback to prior season — using prior data as a label corrupts training.
             sN = get_stats(season)
-            sLabel = sN if sN else s1  # prefer current season if available, else prior
+
+            target_share = None
+            carry_share = None
+            rec_share = None
+            pass_att_per_game = None
 
             if sN:
                 team_pa_label = conn.execute(
@@ -161,37 +165,17 @@ def build_stage1_features(
                     "SELECT games FROM player_season_stats WHERE gsis_id = ? AND season = ?",
                     [gsis_id, season]
                 ).fetchone()
-            else:
-                # Use prior season team stats as fallback for label denominators
-                team_pa_label = conn.execute(
-                    "SELECT pass_attempts FROM team_season_stats WHERE team = ? AND season = ?",
-                    [prior_team, prior]
-                ).fetchone()
-                team_ra_label = conn.execute(
-                    "SELECT rush_attempts FROM team_season_stats WHERE team = ? AND season = ?",
-                    [prior_team, prior]
-                ).fetchone()
-                games_label = conn.execute(
-                    "SELECT games FROM player_season_stats WHERE gsis_id = ? AND season = ?",
-                    [gsis_id, prior]
-                ).fetchone()
 
-            target_share = None
-            carry_share = None
-            rec_share = None
-            pass_att_per_game = None
-
-            if sLabel:
                 if team_pa_label and team_pa_label[0]:
                     tpa = float(team_pa_label[0])
-                    if sLabel[0] is not None:
-                        target_share = float(sLabel[0]) / tpa
-                    if sLabel[0] is not None and position == 'RB':
-                        rec_share = float(sLabel[0]) / tpa
-                if team_ra_label and team_ra_label[0] and sLabel[5] is not None:
-                    carry_share = float(sLabel[5]) / float(team_ra_label[0])
-                if games_label and games_label[0] and sLabel[8] is not None:
-                    pass_att_per_game = float(sLabel[8]) / float(games_label[0])
+                    if sN[0] is not None:
+                        target_share = float(sN[0]) / tpa
+                    if sN[0] is not None and position == 'RB':
+                        rec_share = float(sN[0]) / tpa
+                if team_ra_label and team_ra_label[0] and sN[5] is not None:
+                    carry_share = float(sN[5]) / float(team_ra_label[0])
+                if games_label and games_label[0] and sN[8] is not None:
+                    pass_att_per_game = float(sN[8]) / float(games_label[0])
 
             # --- Team context (season N) ---
             tf = conn.execute("""

@@ -65,13 +65,38 @@ def test_build_stage1_returns_dataframe():
 
 
 def test_target_share_label_correct():
+    """Labels use season N actuals; no fallback to prior season."""
     from tay.features.stage1_features import build_stage1_features
     conn = _make_conn()
     _seed_minimal(conn)
+    # Seed season N (2026) stats for p1: 110 targets, KC, 580 team pass_attempts
+    conn.execute("""
+        INSERT INTO player_season_stats
+            (gsis_id, season, team, games, targets, receptions, rec_yards, rec_tds,
+             carries, rush_yards, rush_tds, attempts, completions, pass_yards,
+             air_yards, epa_per_play, cpoe)
+        VALUES ('p1', 2026, 'KC', 17, 110, 85, 1200, 9, 0, 0, 0, 0, 0, 0, 800, 0.22, 4.5)
+    """)
+    conn.execute("""
+        INSERT INTO team_season_stats (team, season, games, pass_attempts, rush_attempts)
+        VALUES ('KC', 2026, 17, 580, 420)
+    """)
     df = build_stage1_features(conn, seasons=[2026])
     p1 = df[df['gsis_id'] == 'p1'].iloc[0]
-    # p1 had 120 targets / 600 team attempts = 0.20
-    assert p1['target_share'] == pytest.approx(0.20, abs=0.001)
+    # 110 targets / 580 team pass_attempts ≈ 0.1897
+    assert p1['target_share'] == pytest.approx(110 / 580, abs=0.001)
+    conn.close()
+
+
+def test_target_share_none_when_season_n_absent():
+    """When season N data does not exist, all label columns must be None (no fallback)."""
+    from tay.features.stage1_features import build_stage1_features
+    conn = _make_conn()
+    _seed_minimal(conn)
+    # No 2026 player_season_stats seeded → labels must be None
+    df = build_stage1_features(conn, seasons=[2026])
+    p1 = df[df['gsis_id'] == 'p1'].iloc[0]
+    assert p1['target_share'] is None or (p1['target_share'] != p1['target_share'])  # None or NaN
     conn.close()
 
 
