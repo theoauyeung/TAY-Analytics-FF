@@ -49,14 +49,24 @@ _ADP_BLEND_WEIGHT       = 0.25
 _ANALYTICS_BLEND_WEIGHT = 0.10
 
 
+_ANALYTICS_MAX_SHIFT = 15  # analytics_rank can nudge at most this many spots from vor_rank
+
+
 def _blended_score(
     vor_rank: int | None,
     adp: float | None,
     analytics_rank: int | None = None,
 ) -> float:
-    """Blended ranking score: 65% VOR, 25% ADP, 10% historical draft efficiency."""
+    """Blended ranking score: 65% VOR, 25% ADP, 10% historical draft efficiency.
+
+    analytics_rank is clamped to within _ANALYTICS_MAX_SHIFT of vor_rank so that
+    efficiency history nudges but never overrides the model projection.
+    """
     vr = vor_rank if vor_rank is not None else 9999
-    ar = analytics_rank if analytics_rank is not None else vr
+    if analytics_rank is not None:
+        ar = max(vr - _ANALYTICS_MAX_SHIFT, min(vr + _ANALYTICS_MAX_SHIFT, analytics_rank))
+    else:
+        ar = vr
     if adp and adp < 900:
         return (
             (1 - _ADP_BLEND_WEIGHT - _ANALYTICS_BLEND_WEIGHT) * vr
