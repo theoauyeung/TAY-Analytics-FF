@@ -137,9 +137,11 @@ def train_stage2_models(
     }
 
     # Skill positions (WR, TE, RB) — build WITH QB context for train/val consistency
+    df_tr_skill = build_stage2_features(conn, train_seasons, qb_efficiency=qb_eff_tr)
+    df_val_skill = build_stage2_features(conn, val_seasons, qb_efficiency=qb_eff_val)
     for pos in ['WR', 'TE', 'RB']:
-        df_tr = build_stage2_features(conn, train_seasons, qb_efficiency=qb_eff_tr).query(f"position == '{pos}'")
-        df_val = build_stage2_features(conn, val_seasons, qb_efficiency=qb_eff_val).query(f"position == '{pos}'")
+        df_tr = df_tr_skill[df_tr_skill['position'] == pos]
+        df_val = df_val_skill[df_val_skill['position'] == pos]
 
         for label in _LABELS_BY_POS[pos]:
             model, means, stds, features, rmse = train_stage2_model(
@@ -181,13 +183,12 @@ def run_stage2_inference(
             results.setdefault(gsis_id, {})[label] = pred
 
     # Build QB efficiency context from historical EWMA features (not predicted outputs)
-    df_qb_feats = build_stage2_features(conn, [season]).query("position == 'QB'")
     qb_efficiency = {
         row['gsis_id']: {
             'ewma_epa': row.get('ewma_epa_per_play'),
             'ewma_cpoe': row.get('ewma_cpoe'),
         }
-        for _, row in df_qb_feats.iterrows()
+        for _, row in df_qb.iterrows()
     }
 
     # Skill positions with QB context
