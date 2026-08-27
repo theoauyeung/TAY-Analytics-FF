@@ -7,6 +7,17 @@ import duckdb
 MODEL_VERSION_DEFAULT = 'two-stage-v1'
 
 
+def _nullable(val):
+    if val is None:
+        return None
+    try:
+        if pd.isna(val):
+            return None
+    except (TypeError, ValueError):
+        pass
+    return float(val)
+
+
 def _team_volume(conn, team: str, season: int) -> tuple[float, float]:
     """Return (pass_att_per_game, rush_att_per_game) from team_features.
 
@@ -176,16 +187,6 @@ def compose_projections(
             continue
 
         ppr = max(ppr, 0.0)
-
-        def _nullable(val):
-            if val is None:
-                return None
-            try:
-                if pd.isna(val):
-                    return None
-            except (TypeError, ValueError):
-                pass
-            return float(val)
 
         conn.execute("""
             INSERT INTO projections
