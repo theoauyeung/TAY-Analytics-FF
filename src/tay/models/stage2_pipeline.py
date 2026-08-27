@@ -192,10 +192,9 @@ def run_stage2_inference(
     }
 
     # Skill positions with QB context
+    df_skill = build_stage2_features(conn, [season], qb_efficiency=qb_efficiency)
     for pos in ['WR', 'TE', 'RB']:
-        df_pos = build_stage2_features(conn, [season], qb_efficiency=qb_efficiency).query(
-            f"position == '{pos}'"
-        )
+        df_pos = df_skill[df_skill['position'] == pos]
         for label in _LABELS_BY_POS[pos]:
             ckpt = models_dir / f'{pos.lower()}_{label}_stage2.pt'
             if not ckpt.exists():
