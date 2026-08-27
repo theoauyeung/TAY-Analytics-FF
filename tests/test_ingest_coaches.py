@@ -36,8 +36,8 @@ def test_upsert_coaches_idempotent():
 def test_compute_oc_features_no_history():
     from scripts.ingest_coaches import compute_oc_features
     conn = _make_conn()
-    # OC with no prior player stats → is_rookie_oc = True
-    conn.execute("INSERT INTO coaches VALUES ('DAL', 2023, 'offensive_coordinator', 'New Guy')")
+    # OC appearing for the first time (no prior seasons in coaches table) → is_rookie_oc = True
+    conn.execute("INSERT INTO coaches VALUES ('DAL', 2024, 'offensive_coordinator', 'New Guy')")
     compute_oc_features(conn, seasons=[2024])
     row = conn.execute(
         "SELECT is_rookie_oc FROM oc_features WHERE oc_name = 'New Guy' AND as_of_season = 2024"

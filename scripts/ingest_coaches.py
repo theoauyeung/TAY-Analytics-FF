@@ -138,8 +138,10 @@ def compute_oc_features(conn, seasons: list[int]) -> int:
                 else:
                     break
 
-            # is_rookie_oc: True if no usable historical stats were found
-            is_rookie = len(wr1_shares) == 0 and len(rb_shares) == 0 and len(air_yds_pcts) == 0
+            # is_rookie_oc: True if the OC has no prior NFL OC seasons (tenure == 0).
+            # Consistent with tenure — an OC with prior seasons is not a rookie even if
+            # their stats rows happened to be missing from player_season_stats.
+            is_rookie = tenure == 0
 
             conn.execute("""
                 INSERT INTO oc_features
@@ -160,6 +162,31 @@ def compute_oc_features(conn, seasons: list[int]) -> int:
                 tenure,
                 is_rookie,
             ])
+            total += 1
+
+        # Write oc_features for OCs appearing for the first time in this season.
+        # They have no prior history, so all stats are NULL and is_rookie_oc=True.
+        new_ocs = conn.execute("""
+            SELECT DISTINCT full_name FROM coaches
+            WHERE coach_type = 'offensive_coordinator' AND season = ?
+              AND full_name NOT IN (
+                  SELECT DISTINCT full_name FROM coaches
+                  WHERE coach_type = 'offensive_coordinator' AND season < ?
+              )
+        """, [season, season]).fetchall()
+        for (oc_name,) in new_ocs:
+            conn.execute("""
+                INSERT INTO oc_features
+                    (oc_name, as_of_season, hist_wr1_target_share, hist_air_yards_pct,
+                     hist_rb_target_share, tenure_at_team, is_rookie_oc)
+                VALUES (?, ?, NULL, NULL, NULL, 0, TRUE)
+                ON CONFLICT (oc_name, as_of_season) DO UPDATE SET
+                    hist_wr1_target_share = NULL,
+                    hist_air_yards_pct    = NULL,
+                    hist_rb_target_share  = NULL,
+                    tenure_at_team        = 0,
+                    is_rookie_oc          = TRUE
+            """, [oc_name, season])
             total += 1
 
         conn.commit()
