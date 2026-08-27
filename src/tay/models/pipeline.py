@@ -331,3 +331,52 @@ def run_training_pipeline(
     print(f'  {n} total projections written')
 
     conn.close()
+
+
+def run_two_stage_pipeline(
+    conn=None,
+    train_end: int = 2023,
+    val_start: int = 2024,
+    projection_season: int = 2026,
+    models_dir_s1: str | Path = 'models_stage1',
+    models_dir_s2: str | Path = 'models_stage2',
+    db_path=None,
+) -> dict:
+    """Train Stage 1 + Stage 2, compose, write projections. Returns summary dict."""
+    from tay.models.stage1_pipeline import train_stage1_models, run_stage1_inference, normalize_team_shares
+    from tay.models.stage2_pipeline import train_stage2_models, run_stage2_inference
+    from tay.models.composition import compose_projections, MODEL_VERSION_DEFAULT
+
+    if conn is None:
+        conn = get_conn(db_path) if db_path else get_conn()
+        init_schema(conn)
+
+    print('=== TAY Two-Stage Pipeline ===')
+
+    print('\n--- Stage 1: Training opportunity models ---')
+    s1_rmse = train_stage1_models(conn, train_end=train_end, val_start=val_start, models_dir=models_dir_s1)
+
+    print('\n--- Stage 1: Inference ---')
+    stage1_df = run_stage1_inference(conn, projection_season, models_dir=models_dir_s1)
+    stage1_df = normalize_team_shares(stage1_df)
+    print(f'  Stage 1: {len(stage1_df)} player-projections, shares normalized.')
+
+    print('\n--- Stage 2: Training efficiency models ---')
+    s2_rmse = train_stage2_models(conn, train_end=train_end, val_start=val_start, models_dir=models_dir_s2)
+
+    print('\n--- Stage 2: Inference ---')
+    stage2_dict = run_stage2_inference(conn, projection_season, models_dir=models_dir_s2)
+    print(f'  Stage 2: {len(stage2_dict)} players with efficiency estimates.')
+
+    print('\n--- Composition ---')
+    rows_written = compose_projections(
+        conn, stage1_df, stage2_dict, season=projection_season,
+        model_version=MODEL_VERSION_DEFAULT,
+    )
+    print(f'  Composed {rows_written} PPR projections → projections table.')
+
+    return {
+        'stage1_rmse': s1_rmse,
+        'stage2_rmse': s2_rmse,
+        'rows_written': rows_written,
+    }
