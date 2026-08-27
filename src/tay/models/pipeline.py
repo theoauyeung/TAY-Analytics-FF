@@ -347,7 +347,8 @@ def run_two_stage_pipeline(
     from tay.models.stage2_pipeline import train_stage2_models, run_stage2_inference
     from tay.models.composition import compose_projections, MODEL_VERSION_DEFAULT
 
-    if conn is None:
+    _own_conn = conn is None
+    if _own_conn:
         conn = get_conn(db_path) if db_path else get_conn()
         init_schema(conn)
 
@@ -374,6 +375,9 @@ def run_two_stage_pipeline(
         model_version=MODEL_VERSION_DEFAULT,
     )
     print(f'  Composed {rows_written} PPR projections → projections table.')
+
+    if _own_conn:
+        conn.close()
 
     return {
         'stage1_rmse': s1_rmse,
