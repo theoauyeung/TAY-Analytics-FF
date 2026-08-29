@@ -24,6 +24,19 @@ class PlayerOut(BaseModel):
     sim_boom_prob: float | None
     sim_bust_prob: float | None
     avail_mean: float | None
+    # Position-specific projected statistics
+    proj_targets: float | None = None
+    proj_receptions: float | None = None
+    proj_rec_yards: float | None = None
+    proj_rec_tds: float | None = None
+    proj_rush_attempts: float | None = None
+    proj_rush_yards: float | None = None
+    proj_rush_tds: float | None = None
+    proj_pass_attempts: float | None = None
+    proj_completions: float | None = None
+    proj_pass_yards: float | None = None
+    proj_pass_tds: float | None = None
+    proj_interceptions: float | None = None
 
 
 # ── Rankings ──────────────────────────────────────────────────────────────────

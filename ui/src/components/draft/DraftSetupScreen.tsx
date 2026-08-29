@@ -4,7 +4,7 @@ import { useDraftContext } from '../../state/draftState'
 import type { DraftConfig } from '../../types'
 
 const TEAM_OPTIONS = [8, 10, 12]
-const ROUNDS = 13
+const ROUNDS = 15
 
 export function DraftSetupScreen() {
   const { state, dispatch } = useDraftContext()

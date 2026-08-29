@@ -8,7 +8,7 @@ import { PositionBadge } from '../ui/Badge'
 import { ADP_VALUE_THRESHOLD, ADP_OVERVALUED_THRESHOLD } from '../../lib/thresholds'
 import { useDraftContext } from '../../state/draftState'
 
-const POSITION_FILTERS: Array<Position | 'ALL'> = ['ALL', 'QB', 'RB', 'WR', 'TE']
+const POSITION_FILTERS: Array<Position | 'ALL'> = ['ALL', 'QB', 'RB', 'WR', 'TE', 'K', 'DST']
 
 export function AvailablePlayers() {
   const { availablePlayers, draftPlayer, isUserTurn } = useDraftState()
@@ -36,9 +36,28 @@ export function AvailablePlayers() {
   )
 
   const available = useMemo(() => {
-    return rankings
+    const ranked = rankings
       .filter(r => availableIds.has(r.player.id))
       .filter(r => posFilter === 'ALL' || r.player.position === posFilter)
+
+    // For K/DST filters, append unranked players that don't have a ranking entry
+    const rankedIds = new Set(ranked.map(r => r.player.id))
+    const unranked = (posFilter === 'ALL' || posFilter === 'K' || posFilter === 'DST')
+      ? availablePlayers
+          .filter(p => (p.position === 'K' || p.position === 'DST'))
+          .filter(p => !rankedIds.has(p.id))
+          .filter(p => posFilter === 'ALL' || p.position === posFilter)
+          .map(p => ({
+            rank: 999, positionRank: 999, player: p,
+            tier: { number: 5 as const, label: 'TIER 5 — DEEP BENCH' as const },
+            projection: 0, vor: 0, adp: 999, modelRank: 999, adpDelta: 0,
+            replacementLevel: 0, floor: 0, ceiling: 0,
+            targetShare: null, rushShare: null, snapPct: null,
+            routePct: null, redZoneUsage: null, tdProjection: 0, gamesPlayed: 17,
+          }))
+      : []
+
+    return [...ranked, ...unranked]
       .filter(r => {
         if (!search) return true
         const q = search.toLowerCase()
@@ -48,7 +67,7 @@ export function AvailablePlayers() {
         )
       })
       .sort((a, b) => (a.adp ?? 999) - (b.adp ?? 999))
-  }, [rankings, availableIds, posFilter, search])
+  }, [rankings, availableIds, availablePlayers, posFilter, search])
 
   // Dismiss pending on Escape
   useEffect(() => {

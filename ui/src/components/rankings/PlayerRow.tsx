@@ -194,9 +194,6 @@ export function PlayerRow({ ranking, visibleColumns, onClick, isDrafted = false 
       {visibleColumns.includes('gamesPlayed') && (
         <td className="py-2.5 px-3 text-right w-16 text-sm text-text-secondary">{fmt(ranking.gamesPlayed, 1)}</td>
       )}
-      {visibleColumns.includes('modelConfidence') && (
-        <td className="py-2.5 px-3 text-right w-16 text-sm text-text-secondary">{fmtPct(ranking.modelConfidence)}</td>
-      )}
       {visibleColumns.includes('adpDelta') && (
         <td className={clsx('py-2.5 px-3 text-right w-16 text-sm font-medium', adpDelta <= ADP_VALUE_THRESHOLD ? 'text-green-400' : adpDelta >= ADP_OVERVALUED_THRESHOLD ? 'text-red-400' : 'text-text-secondary')}>
           {adpDelta >= 0 ? '+' : ''}{adpDelta}

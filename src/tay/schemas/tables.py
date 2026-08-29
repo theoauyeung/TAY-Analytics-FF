@@ -207,6 +207,19 @@ CREATE TABLE IF NOT EXISTS projections (
     avail_std           DOUBLE,   -- std dev of games played
     consensus_projection DOUBLE,
     blended_projection   DOUBLE,
+    -- Position-specific projected statistics (season totals)
+    proj_targets         DOUBLE,
+    proj_receptions      DOUBLE,
+    proj_rec_yards       DOUBLE,
+    proj_rec_tds         DOUBLE,
+    proj_rush_attempts   DOUBLE,
+    proj_rush_yards      DOUBLE,
+    proj_rush_tds        DOUBLE,
+    proj_pass_attempts   DOUBLE,
+    proj_completions     DOUBLE,
+    proj_pass_yards      DOUBLE,
+    proj_pass_tds        DOUBLE,
+    proj_interceptions   DOUBLE,
     created_at          TIMESTAMP DEFAULT current_timestamp,
     PRIMARY KEY (gsis_id, season, model_version)
 )

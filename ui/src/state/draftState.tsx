@@ -11,11 +11,11 @@ const DEFAULT_DRAFT_CONFIG: DraftConfig = {
     WR: 2,
     TE: 1,
     FLEX: 1,
-    BENCH: 6,
-    K: 0,
-    DST: 0,
+    BENCH: 7,
+    K: 1,
+    DST: 1,
   },
-  totalRounds: 13,
+  totalRounds: 15,
 }
 
 // ─── Snake-draft helpers ───────────────────────────────────────────────────

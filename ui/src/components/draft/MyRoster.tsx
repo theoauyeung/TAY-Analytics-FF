@@ -21,6 +21,8 @@ function buildSlots(config: RosterConfig): SlotDef[] {
   add('WR', 'WR', config.WR)
   add('TE', 'TE', config.TE)
   add('FLEX', 'FLEX', config.FLEX)
+  if (config.K > 0) add('K', 'K', config.K)
+  if (config.DST > 0) add('DST', 'DST', config.DST)
   add('BN', 'BENCH', config.BENCH)
   return slots
 }
@@ -37,7 +39,7 @@ function fillSlots(
         ? (p.position === 'RB' || p.position === 'WR' || p.position === 'TE')
         : pos === 'BENCH'
           ? true
-          : p.position === pos
+          : p.position === (pos as string)
     )
     if (idx === -1) return { slot, player: null }
     const [player] = remaining.splice(idx, 1)
@@ -63,7 +65,11 @@ export function MyRoster() {
   const slots = buildSlots(config.rosterConfig)
   const filled = fillSlots(slots, userRoster)
 
-  const POSITIONS: Position[] = ['QB', 'RB', 'WR', 'TE']
+  const POSITIONS: Position[] = [
+    'QB', 'RB', 'WR', 'TE',
+    ...(config.rosterConfig.K > 0 ? ['K' as Position] : []),
+    ...(config.rosterConfig.DST > 0 ? ['DST' as Position] : []),
+  ]
   const positionCounts = Object.fromEntries(
     POSITIONS.map(pos => [pos, userRoster.filter(p => p.position === pos).length])
   ) as Record<Position, number>
@@ -73,8 +79,8 @@ export function MyRoster() {
     RB: config.rosterConfig.RB,
     WR: config.rosterConfig.WR,
     TE: config.rosterConfig.TE,
-    K: 0,
-    DST: 0,
+    K: config.rosterConfig.K,
+    DST: config.rosterConfig.DST,
   }
 
   const primaryNeed = reco

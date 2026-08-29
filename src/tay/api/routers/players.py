@@ -14,7 +14,11 @@ _SELECT = """
            pr.mean_projection, pr.vor, pr.vor_rank, pr.tier, pr.adp_delta,
            COALESCE(a.adp, 999.0) AS adp,
            pr.sim_mean, pr.sim_p10, pr.sim_p90,
-           pr.sim_boom_prob, pr.sim_bust_prob, pr.avail_mean
+           pr.sim_boom_prob, pr.sim_bust_prob, pr.avail_mean,
+           pr.proj_targets, pr.proj_receptions, pr.proj_rec_yards, pr.proj_rec_tds,
+           pr.proj_rush_attempts, pr.proj_rush_yards, pr.proj_rush_tds,
+           pr.proj_pass_attempts, pr.proj_completions, pr.proj_pass_yards,
+           pr.proj_pass_tds, pr.proj_interceptions
     FROM projections pr
     JOIN players p ON p.gsis_id = pr.gsis_id
     LEFT JOIN adp a ON a.gsis_id = pr.gsis_id
@@ -29,6 +33,10 @@ _KEYS = [
     'gsis_id', 'name', 'position', 'team', 'season', 'model_version',
     'mean_projection', 'vor', 'vor_rank', 'tier', 'adp_delta', 'adp',
     'sim_mean', 'sim_p10', 'sim_p90', 'sim_boom_prob', 'sim_bust_prob', 'avail_mean',
+    'proj_targets', 'proj_receptions', 'proj_rec_yards', 'proj_rec_tds',
+    'proj_rush_attempts', 'proj_rush_yards', 'proj_rush_tds',
+    'proj_pass_attempts', 'proj_completions', 'proj_pass_yards',
+    'proj_pass_tds', 'proj_interceptions',
 ]
 
 

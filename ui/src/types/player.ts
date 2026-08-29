@@ -51,11 +51,26 @@ export interface Player {
   injuryNote: string | null
 }
 
+export interface ProjectedStats {
+  targets: number | null
+  receptions: number | null
+  recYards: number | null
+  recTds: number | null
+  rushAttempts: number | null
+  rushYards: number | null
+  rushTds: number | null
+  passAttempts: number | null
+  completions: number | null
+  passYards: number | null
+  passTds: number | null
+  interceptions: number | null
+}
+
 export interface PlayerDetail extends Player {
   projection: Projection
+  projectedStats: ProjectedStats
   opportunity: OpportunityMetrics
   efficiency: EfficiencyMetrics
-  modelConfidence: number           // 0–1
   rookieYear: boolean
   collegeTeam: string | null
   depthChartPosition: number        // 1 = starter, 2 = backup, etc.

@@ -33,7 +33,6 @@ export interface Ranking {
   redZoneUsage: number | null
   tdProjection: number
   gamesPlayed: number
-  modelConfidence: number
 }
 
 export type ColumnKey =
@@ -41,7 +40,7 @@ export type ColumnKey =
   | 'projection' | 'vor' | 'adp' | 'modelRank' | 'tier'
   | 'floor' | 'ceiling' | 'targetShare' | 'rushShare'
   | 'snapPct' | 'routePct' | 'redZoneUsage' | 'tdProjection'
-  | 'gamesPlayed' | 'modelConfidence' | 'adpDelta'
+  | 'gamesPlayed' | 'adpDelta'
 
 export const CORE_COLUMNS: ColumnKey[] = [
   'rank', 'player', 'position', 'team', 'bye',
@@ -51,7 +50,7 @@ export const CORE_COLUMNS: ColumnKey[] = [
 export const OPTIONAL_COLUMNS: ColumnKey[] = [
   'floor', 'ceiling', 'targetShare', 'rushShare',
   'snapPct', 'routePct', 'redZoneUsage', 'tdProjection',
-  'gamesPlayed', 'modelConfidence', 'adpDelta',
+  'gamesPlayed', 'adpDelta',
 ]
 
 export const COLUMN_LABELS: Record<ColumnKey, string> = {
@@ -59,7 +58,7 @@ export const COLUMN_LABELS: Record<ColumnKey, string> = {
   projection: 'Proj', vor: 'VOR', adp: 'ADP', modelRank: 'Mdl', tier: 'Tier',
   floor: 'Floor', ceiling: 'Ceil', targetShare: 'Tgt%', rushShare: 'Rush%',
   snapPct: 'Snap%', routePct: 'Route%', redZoneUsage: 'RZ%',
-  tdProjection: 'TD Proj', gamesPlayed: 'GP', modelConfidence: 'Conf',
+  tdProjection: 'TD Proj', gamesPlayed: 'GP',
   adpDelta: 'ADP Δ',
 }
 

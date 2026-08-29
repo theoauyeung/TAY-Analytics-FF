@@ -1,7 +1,8 @@
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useDraftContext, picksUntilNextTurn } from '../state/draftState'
 import { fetchPlayers } from '../api/players'
+import { STATIC_UNRANKED_PLAYERS } from '../api/staticPlayers'
 import type { PlayerDetail, DraftConfig, DraftedPick } from '../types'
 
 export function useDraftState() {
@@ -19,7 +20,11 @@ export function useDraftState() {
   })
 
   const draftedPlayerIds = new Set(state.picks.map(p => p.player.id))
-  const availablePlayers: PlayerDetail[] = allPlayers.filter(p => !draftedPlayerIds.has(p.id))
+  const allPlayersWithStatic = useMemo(
+    () => [...allPlayers, ...STATIC_UNRANKED_PLAYERS],
+    [allPlayers]
+  )
+  const availablePlayers: PlayerDetail[] = allPlayersWithStatic.filter(p => !draftedPlayerIds.has(p.id))
 
   const draftPlayer = useCallback(
     (player: PlayerDetail, isUserPick?: boolean) =>

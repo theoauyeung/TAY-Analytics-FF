@@ -4,30 +4,83 @@ import clsx from 'clsx'
 import { usePlayer } from '../../hooks/usePlayer'
 import { PositionBadge } from '../ui/Badge'
 import { Spinner } from '../ui/Spinner'
+import type { Position, ProjectedStats } from '../../types'
 
 interface Props {
   playerId: string | null
   onClose: () => void
 }
 
-function MetricRow({ label, value, detail }: { label: string; value: string; detail?: string }) {
+function StatRow({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="flex items-center justify-between py-1.5 border-b border-border/40">
-      <span className="text-xs text-text-secondary">{label}</span>
+    <div className="flex items-baseline justify-between py-1.5 border-b border-border/30">
+      <span className="text-xs text-text-muted">{label}</span>
       <div className="text-right">
-        <span className="text-sm font-medium text-text-primary">{value}</span>
-        {detail && <div className="text-xs text-text-muted">{detail}</div>}
+        <span className="text-sm font-medium font-mono text-text-primary">{value}</span>
+        {sub && <span className="text-xs text-text-muted ml-1.5">{sub}</span>}
       </div>
     </div>
   )
 }
 
-function SectionHeader({ title }: { title: string }) {
+function SectionLabel({ title }: { title: string }) {
   return (
-    <div className="text-xs font-bold tracking-wide text-accent uppercase mt-5 mb-2">
+    <div className="text-xs font-condensed font-semibold tracking-wide text-text-muted uppercase mt-5 mb-2">
       {title}
     </div>
   )
+}
+
+function fmt(v: number | null, decimals = 0): string {
+  if (v === null) return '—'
+  return v.toFixed(decimals)
+}
+
+function fmtPct(v: number | null): string {
+  if (v === null) return '—'
+  return `${(v * 100).toFixed(1)}%`
+}
+
+type StatDef = { label: string; value: string }
+
+function getProjectedStatRows(position: Position, stats: ProjectedStats): StatDef[] {
+  switch (position) {
+    case 'RB':
+      return [
+        { label: 'Rush Attempts', value: fmt(stats.rushAttempts) },
+        { label: 'Rush Yards',    value: fmt(stats.rushYards) },
+        { label: 'Rush TD',       value: fmt(stats.rushTds, 1) },
+        { label: 'Targets',       value: fmt(stats.targets) },
+        { label: 'Receptions',    value: fmt(stats.receptions) },
+        { label: 'Rec Yards',     value: fmt(stats.recYards) },
+        { label: 'Rec TD',        value: fmt(stats.recTds, 1) },
+      ]
+    case 'WR':
+    case 'TE':
+      return [
+        { label: 'Targets',    value: fmt(stats.targets) },
+        { label: 'Receptions', value: fmt(stats.receptions) },
+        { label: 'Rec Yards',  value: fmt(stats.recYards) },
+        { label: 'Rec TD',     value: fmt(stats.recTds, 1) },
+        ...(stats.rushAttempts ? [
+          { label: 'Rush Attempts', value: fmt(stats.rushAttempts) },
+          { label: 'Rush Yards',    value: fmt(stats.rushYards) },
+        ] : []),
+      ]
+    case 'QB':
+      return [
+        { label: 'Pass Attempts',  value: fmt(stats.passAttempts) },
+        { label: 'Completions',    value: fmt(stats.completions) },
+        { label: 'Pass Yards',     value: fmt(stats.passYards) },
+        { label: 'Pass TD',        value: fmt(stats.passTds, 1) },
+        { label: 'Interceptions',  value: fmt(stats.interceptions, 1) },
+        { label: 'Rush Attempts',  value: fmt(stats.rushAttempts) },
+        { label: 'Rush Yards',     value: fmt(stats.rushYards) },
+        { label: 'Rush TD',        value: fmt(stats.rushTds, 1) },
+      ]
+    default:
+      return []
+  }
 }
 
 export function PlayerDrawer({ playerId, onClose }: Props) {
@@ -41,9 +94,10 @@ export function PlayerDrawer({ playerId, onClose }: Props) {
     return () => window.removeEventListener('keydown', handleKey)
   }, [onClose])
 
+  const hasAnyProjectedStats = player && Object.values(player.projectedStats).some(v => v !== null)
+
   return (
     <>
-      {/* Backdrop */}
       {playerId && (
         <div
           className="fixed inset-0 bg-black/40 z-40 transition-opacity"
@@ -51,7 +105,6 @@ export function PlayerDrawer({ playerId, onClose }: Props) {
         />
       )}
 
-      {/* Drawer */}
       <aside
         className={clsx(
           'fixed right-0 top-0 h-screen w-96 bg-bg-secondary border-l border-border z-50 flex flex-col transition-transform duration-200',
@@ -63,21 +116,24 @@ export function PlayerDrawer({ playerId, onClose }: Props) {
           <div className="flex items-center gap-3">
             {player && (
               <>
-                <div className="w-12 h-12 rounded-full overflow-hidden bg-bg-elevated flex-shrink-0">
+                <div className="w-14 h-14 rounded-full overflow-hidden bg-bg-elevated flex-shrink-0">
                   {player.imageUrl ? (
                     <img src={player.imageUrl} alt={player.name} className="w-full h-full object-cover"
                       onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-lg font-bold text-text-muted">
+                    <div className="w-full h-full flex items-center justify-center text-xl font-bold text-text-muted">
                       {player.name.charAt(0)}
                     </div>
                   )}
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-text-primary">{player.name}</h2>
+                  <h2 className="text-lg font-bold text-text-primary leading-tight">{player.name}</h2>
                   <div className="flex items-center gap-2 mt-0.5">
                     <PositionBadge position={player.position} />
-                    <span className="text-xs text-text-secondary">{player.team} · Bye {player.byeWeek}</span>
+                    <span className="text-xs text-text-muted">{player.team}</span>
+                    {player.byeWeek > 0 && (
+                      <span className="text-xs text-text-muted">· Bye {player.byeWeek}</span>
+                    )}
                   </div>
                 </div>
               </>
@@ -94,79 +150,83 @@ export function PlayerDrawer({ playerId, onClose }: Props) {
 
           {player && (
             <>
-              {/* Projection band */}
-              <div className="bg-bg-elevated rounded-md p-4 grid grid-cols-3 gap-3 text-center">
-                <div>
-                  <div className="text-xs text-text-muted mb-1">Floor</div>
-                  <div className="text-xl font-bold text-text-secondary">{player.projection.floor.toFixed(0)}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-accent mb-1">Median</div>
-                  <div className="text-2xl font-bold text-text-primary">{player.projection.median.toFixed(0)}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-text-muted mb-1">Ceiling</div>
-                  <div className="text-xl font-bold text-text-secondary">{player.projection.ceiling.toFixed(0)}</div>
-                </div>
+              {/* 1. Projected Production */}
+              {hasAnyProjectedStats && (
+                <>
+                  <SectionLabel title="Projected Production" />
+                  {getProjectedStatRows(player.position, player.projectedStats).map(row => (
+                    <StatRow key={row.label} label={row.label} value={row.value} />
+                  ))}
+                </>
+              )}
+
+              {/* 2. Fantasy Projection */}
+              <SectionLabel title="Fantasy Projection" />
+              <div className="flex items-baseline gap-3 py-2 mb-1">
+                <span className="text-3xl font-bold font-mono text-text-primary">
+                  {player.projection.mean.toFixed(1)}
+                </span>
+                <span className="text-sm text-text-muted">PPR pts</span>
               </div>
 
-              <div className="mt-3">
-                <div className="flex-1 bg-bg-elevated border border-border rounded-lg p-2.5 text-center">
-                  <div className="text-xs text-text-muted">GP</div>
-                  <div className="text-sm font-bold text-text-primary">
-                    {player.projection.gamesPlayed.toFixed(1)}
+              {/* Projection range */}
+              <div className="grid grid-cols-3 gap-3 mb-1">
+                {[
+                  { label: 'Floor',   value: player.projection.floor.toFixed(0) },
+                  { label: 'Median',  value: player.projection.median.toFixed(0) },
+                  { label: 'Ceiling', value: player.projection.ceiling.toFixed(0) },
+                ].map(({ label, value }) => (
+                  <div key={label} className="text-center border-t border-border pt-2">
+                    <div className="text-xs text-text-muted mb-0.5">{label}</div>
+                    <div className="text-base font-bold font-mono text-text-secondary">{value}</div>
                   </div>
-                </div>
+                ))}
               </div>
 
-              {/* Opportunity */}
-              <SectionHeader title="Opportunity" />
+              {/* 3. Draft Value */}
+              <SectionLabel title="Draft Value" />
+              <StatRow label="VOR" value={player.projection.mean > 0 ? `+${(player.projection.mean - 100).toFixed(1)}` : '—'} />
+              <StatRow label="ADP" value="—" />
+
+              {/* 4. Opportunity */}
+              <SectionLabel title="Usage" />
               {player.opportunity.targetShare !== null && (
-                <MetricRow label="Target Share" value={`${(player.opportunity.targetShare * 100).toFixed(1)}%`} />
+                <StatRow label="Target Share" value={fmtPct(player.opportunity.targetShare)} />
               )}
               {player.opportunity.routeParticipation !== null && (
-                <MetricRow label="Route Participation" value={`${(player.opportunity.routeParticipation * 100).toFixed(1)}%`} />
+                <StatRow label="Route Participation" value={fmtPct(player.opportunity.routeParticipation)} />
               )}
-              <MetricRow label="Snap Share" value={`${(player.opportunity.snapShare * 100).toFixed(1)}%`} />
+              <StatRow label="Snap Share" value={fmtPct(player.opportunity.snapShare)} />
               {player.opportunity.rushShare !== null && (
-                <MetricRow label="Rush Share" value={`${(player.opportunity.rushShare * 100).toFixed(1)}%`} />
+                <StatRow label="Rush Share" value={fmtPct(player.opportunity.rushShare)} />
               )}
               {player.opportunity.redZoneUsage !== null && (
-                <MetricRow label="Red Zone Usage" value={`${(player.opportunity.redZoneUsage * 100).toFixed(1)}%`} />
+                <StatRow label="Red Zone Usage" value={fmtPct(player.opportunity.redZoneUsage)} />
               )}
 
-              {/* Efficiency */}
-              <SectionHeader title="Efficiency" />
+              {/* 5. Efficiency */}
+              <SectionLabel title="Efficiency" />
               {player.efficiency.yardsPerRouteRun !== null && (
-                <MetricRow label="Yards/Route Run" value={player.efficiency.yardsPerRouteRun.toFixed(2)} />
+                <StatRow label="Yards/Route Run" value={player.efficiency.yardsPerRouteRun.toFixed(2)} />
               )}
               {player.efficiency.yardsPerTarget !== null && (
-                <MetricRow label="Yards/Target" value={player.efficiency.yardsPerTarget.toFixed(1)} />
+                <StatRow label="Yards/Target" value={player.efficiency.yardsPerTarget.toFixed(1)} />
               )}
               {player.efficiency.catchRate !== null && (
-                <MetricRow label="Catch Rate" value={`${(player.efficiency.catchRate * 100).toFixed(1)}%`} />
+                <StatRow label="Catch Rate" value={fmtPct(player.efficiency.catchRate)} />
               )}
               {player.efficiency.yardsPerCarry !== null && (
-                <MetricRow label="Yards/Carry" value={player.efficiency.yardsPerCarry.toFixed(1)} />
+                <StatRow label="Yards/Carry" value={player.efficiency.yardsPerCarry.toFixed(1)} />
               )}
               {player.efficiency.completionPct !== null && (
-                <MetricRow label="Completion %" value={`${(player.efficiency.completionPct * 100).toFixed(1)}%`} />
+                <StatRow label="Completion %" value={fmtPct(player.efficiency.completionPct)} />
               )}
               {player.efficiency.yardsPerAttempt !== null && (
-                <MetricRow label="Yards/Attempt" value={player.efficiency.yardsPerAttempt.toFixed(1)} />
+                <StatRow label="Yards/Attempt" value={player.efficiency.yardsPerAttempt.toFixed(1)} />
               )}
               {player.efficiency.epaPerPlay !== null && (
-                <MetricRow label="EPA/Play" value={player.efficiency.epaPerPlay.toFixed(3)} />
+                <StatRow label="EPA/Play" value={player.efficiency.epaPerPlay.toFixed(3)} />
               )}
-
-              {/* Model assessment */}
-              <SectionHeader title="Model Assessment" />
-              <div className="bg-bg-elevated rounded-lg p-3 space-y-1.5 text-xs text-text-secondary">
-                <p>This player projects as a strong value relative to current ADP. The model weights their elevated target share and elite route participation as primary upside drivers. Confidence is high given stable team situation and consistent usage patterns.</p>
-                <p className="text-text-muted pt-1">
-                  Confidence: {(player.modelConfidence * 100).toFixed(0)}%
-                </p>
-              </div>
             </>
           )}
         </div>

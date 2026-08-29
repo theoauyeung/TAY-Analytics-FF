@@ -43,25 +43,25 @@ def _team_volume(conn, team: str, season: int) -> tuple[float, float]:
     return pass_att_pg, rush_att_pg
 
 
-def _wr_te_ppr(target_share: float, team_pass_att_pg: float, eff: dict) -> float | None:
-    """Compute PPR projection for WR/TE.
-
-    ppr = targets × catch_rate × 1.0
-        + targets × yards_per_target × 0.1
-        + targets × td_rate_per_target × 6.0
-    where targets = target_share × team_pass_att_per_game × 17
-    """
+def _wr_te_ppr(target_share: float, team_pass_att_pg: float, eff: dict) -> dict | None:
+    """Return PPR projection and component stats for WR/TE."""
     ypt = eff.get('yards_per_target')
     cr  = eff.get('catch_rate')
     tdr = eff.get('td_rate_per_target')
     if None in (ypt, cr, tdr):
         return None
-    targets = target_share * team_pass_att_pg * 17
-    return (
-        targets * float(cr) * 1.0
-        + targets * float(ypt) * 0.1
-        + targets * float(tdr) * 6.0
-    )
+    targets    = target_share * team_pass_att_pg * 17
+    receptions = targets * float(cr)
+    rec_yards  = targets * float(ypt)
+    rec_tds    = targets * float(tdr)
+    ppr = receptions * 1.0 + rec_yards * 0.1 + rec_tds * 6.0
+    return {
+        'ppr': ppr,
+        'proj_targets':    targets,
+        'proj_receptions': receptions,
+        'proj_rec_yards':  rec_yards,
+        'proj_rec_tds':    rec_tds,
+    }
 
 
 def _rb_ppr(
@@ -70,17 +70,8 @@ def _rb_ppr(
     pass_att_pg: float,
     rush_att_pg: float,
     eff: dict,
-) -> float | None:
-    """Compute PPR projection for RB.
-
-    ppr = carries × yards_per_carry × 0.1
-        + carries × rush_td_rate × 6.0
-        + rb_tgts × rec_catch_rate × 1.0
-        + rb_tgts × rec_yards_per_target × 0.1
-        + rb_tgts × rec_td_rate × 6.0
-    where carries = carry_share × team_rush_att_per_game × 17
-          rb_tgts = rec_share × team_pass_att_per_game × 17
-    """
+) -> dict | None:
+    """Return PPR projection and component stats for RB."""
     ypc     = eff.get('yards_per_carry')
     rtdr    = eff.get('rush_td_rate')
     rypt    = eff.get('rec_yards_per_target')
@@ -88,42 +79,61 @@ def _rb_ppr(
     rec_tdr = eff.get('rec_td_rate')
     if None in (ypc, rtdr, rypt, rcr, rec_tdr):
         return None
-    carries = carry_share * rush_att_pg * 17
-    rb_tgts = rec_share * pass_att_pg * 17
-    return (
-        carries * float(ypc) * 0.1
-        + carries * float(rtdr) * 6.0
-        + rb_tgts * float(rcr) * 1.0
-        + rb_tgts * float(rypt) * 0.1
-        + rb_tgts * float(rec_tdr) * 6.0
+    carries    = carry_share * rush_att_pg * 17
+    rb_tgts    = rec_share * pass_att_pg * 17
+    rush_yards = carries * float(ypc)
+    rush_tds   = carries * float(rtdr)
+    receptions = rb_tgts * float(rcr)
+    rec_yards  = rb_tgts * float(rypt)
+    rec_tds    = rb_tgts * float(rec_tdr)
+    ppr = (
+        rush_yards * 0.1 + rush_tds * 6.0
+        + receptions * 1.0 + rec_yards * 0.1 + rec_tds * 6.0
     )
+    return {
+        'ppr': ppr,
+        'proj_rush_attempts': carries,
+        'proj_rush_yards':    rush_yards,
+        'proj_rush_tds':      rush_tds,
+        'proj_targets':       rb_tgts,
+        'proj_receptions':    receptions,
+        'proj_rec_yards':     rec_yards,
+        'proj_rec_tds':       rec_tds,
+    }
 
 
-def _qb_ppr(pass_att_per_game: float, eff: dict) -> float | None:
-    """Compute PPR projection for QB.
-
-    ppr = pass_att × yards_per_attempt × 0.04
-        + pass_att × td_rate × 4.0
-        - pass_att × int_rate × 2.0
-        + rush_yards_per_game × 17 × 0.1
-        + rush_tds_per_game × 17 × 6.0
-    where pass_att = pass_att_per_game × 17
-    """
+def _qb_ppr(pass_att_per_game: float, eff: dict) -> dict | None:
+    """Return PPR projection and component stats for QB."""
     ypa  = eff.get('yards_per_attempt')
     tdr  = eff.get('td_rate')
     intr = eff.get('int_rate')
+    cpct = eff.get('completion_pct')
     rypg = eff.get('rush_yards_per_game')
     rtpg = eff.get('rush_tds_per_game')
     if None in (ypa, tdr, intr):
         return None
-    pass_att = pass_att_per_game * 17
-    return (
-        pass_att * float(ypa) * 0.04
-        + pass_att * float(tdr) * 4.0
-        - pass_att * float(intr) * 2.0
-        + float(rypg or 0) * 17 * 0.1
-        + float(rtpg or 0) * 17 * 6.0
+    pass_att    = pass_att_per_game * 17
+    completions = pass_att * float(cpct or 0.63)
+    pass_yards  = pass_att * float(ypa)
+    pass_tds    = pass_att * float(tdr)
+    ints        = pass_att * float(intr)
+    rush_yards  = float(rypg or 0) * 17
+    rush_tds    = float(rtpg or 0) * 17
+    ppr = (
+        pass_yards * 0.04 + pass_tds * 4.0 - ints * 2.0
+        + rush_yards * 0.1 + rush_tds * 6.0
     )
+    return {
+        'ppr': ppr,
+        'proj_pass_attempts': pass_att,
+        'proj_completions':   completions,
+        'proj_pass_yards':    pass_yards,
+        'proj_pass_tds':      pass_tds,
+        'proj_interceptions': ints,
+        'proj_rush_attempts': float(rypg or 0) * 17 / max(float(ypa or 1), 1),
+        'proj_rush_yards':    rush_yards,
+        'proj_rush_tds':      rush_tds,
+    }
 
 
 def compose_projections(
@@ -168,44 +178,72 @@ def compose_projections(
 
         pass_att_pg, rush_att_pg = _team_volume(conn, team, season)
 
-        ppr = None
+        stats: dict | None = None
         if position in ('WR', 'TE'):
             ts = row.get('projected_target_share')
             if ts is not None and not pd.isna(ts):
-                ppr = _wr_te_ppr(float(ts), pass_att_pg, eff)
+                stats = _wr_te_ppr(float(ts), pass_att_pg, eff)
         elif position == 'RB':
             cs = row.get('projected_carry_share')
             rs = row.get('projected_rec_share')
             if cs is not None and rs is not None and not pd.isna(cs) and not pd.isna(rs):
-                ppr = _rb_ppr(float(cs), float(rs), pass_att_pg, rush_att_pg, eff)
+                stats = _rb_ppr(float(cs), float(rs), pass_att_pg, rush_att_pg, eff)
         elif position == 'QB':
             papg = row.get('projected_pass_att_per_game')
             if papg is not None and not pd.isna(papg):
-                ppr = _qb_ppr(float(papg), eff)
+                stats = _qb_ppr(float(papg), eff)
 
-        if ppr is None:
+        if stats is None:
             continue
 
-        ppr = max(ppr, 0.0)
+        ppr = max(stats['ppr'], 0.0)
 
         conn.execute("""
             INSERT INTO projections
                 (gsis_id, season, model_version, mean_projection,
                  projected_target_share, projected_carry_share,
-                 projected_rec_share, projected_pass_att_per_game)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                 projected_rec_share, projected_pass_att_per_game,
+                 proj_targets, proj_receptions, proj_rec_yards, proj_rec_tds,
+                 proj_rush_attempts, proj_rush_yards, proj_rush_tds,
+                 proj_pass_attempts, proj_completions, proj_pass_yards,
+                 proj_pass_tds, proj_interceptions)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT (gsis_id, season, model_version) DO UPDATE SET
                 mean_projection             = excluded.mean_projection,
                 projected_target_share      = excluded.projected_target_share,
                 projected_carry_share       = excluded.projected_carry_share,
                 projected_rec_share         = excluded.projected_rec_share,
-                projected_pass_att_per_game = excluded.projected_pass_att_per_game
+                projected_pass_att_per_game = excluded.projected_pass_att_per_game,
+                proj_targets       = excluded.proj_targets,
+                proj_receptions    = excluded.proj_receptions,
+                proj_rec_yards     = excluded.proj_rec_yards,
+                proj_rec_tds       = excluded.proj_rec_tds,
+                proj_rush_attempts = excluded.proj_rush_attempts,
+                proj_rush_yards    = excluded.proj_rush_yards,
+                proj_rush_tds      = excluded.proj_rush_tds,
+                proj_pass_attempts = excluded.proj_pass_attempts,
+                proj_completions   = excluded.proj_completions,
+                proj_pass_yards    = excluded.proj_pass_yards,
+                proj_pass_tds      = excluded.proj_pass_tds,
+                proj_interceptions = excluded.proj_interceptions
         """, [
             gsis_id, season, model_version, ppr,
             _nullable(row.get('projected_target_share')),
             _nullable(row.get('projected_carry_share')),
             _nullable(row.get('projected_rec_share')),
             _nullable(row.get('projected_pass_att_per_game')),
+            _nullable(stats.get('proj_targets')),
+            _nullable(stats.get('proj_receptions')),
+            _nullable(stats.get('proj_rec_yards')),
+            _nullable(stats.get('proj_rec_tds')),
+            _nullable(stats.get('proj_rush_attempts')),
+            _nullable(stats.get('proj_rush_yards')),
+            _nullable(stats.get('proj_rush_tds')),
+            _nullable(stats.get('proj_pass_attempts')),
+            _nullable(stats.get('proj_completions')),
+            _nullable(stats.get('proj_pass_yards')),
+            _nullable(stats.get('proj_pass_tds')),
+            _nullable(stats.get('proj_interceptions')),
         ])
         written += 1
 

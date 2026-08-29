@@ -18,6 +18,18 @@ interface BackendPlayer {
   sim_p10: number | null
   sim_p90: number | null
   avail_mean: number | null
+  proj_targets: number | null
+  proj_receptions: number | null
+  proj_rec_yards: number | null
+  proj_rec_tds: number | null
+  proj_rush_attempts: number | null
+  proj_rush_yards: number | null
+  proj_rush_tds: number | null
+  proj_pass_attempts: number | null
+  proj_completions: number | null
+  proj_pass_yards: number | null
+  proj_pass_tds: number | null
+  proj_interceptions: number | null
 }
 
 function toPlayerDetail(p: BackendPlayer): PlayerDetail {
@@ -44,6 +56,20 @@ function toPlayerDetail(p: BackendPlayer): PlayerDetail {
       stdDev: 0,
       gamesPlayed: 17,
     },
+    projectedStats: {
+      targets:       p.proj_targets,
+      receptions:    p.proj_receptions,
+      recYards:      p.proj_rec_yards,
+      recTds:        p.proj_rec_tds,
+      rushAttempts:  p.proj_rush_attempts,
+      rushYards:     p.proj_rush_yards,
+      rushTds:       p.proj_rush_tds,
+      passAttempts:  p.proj_pass_attempts,
+      completions:   p.proj_completions,
+      passYards:     p.proj_pass_yards,
+      passTds:       p.proj_pass_tds,
+      interceptions: p.proj_interceptions,
+    },
     opportunity: {
       targetShare: null,
       routeParticipation: null,
@@ -64,7 +90,6 @@ function toPlayerDetail(p: BackendPlayer): PlayerDetail {
       completionPct: null,
       yardsPerAttempt: null,
     },
-    modelConfidence: p.avail_mean ?? 0,
     rookieYear: false,
     collegeTeam: null,
     depthChartPosition: 1,

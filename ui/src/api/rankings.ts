@@ -87,7 +87,20 @@ export function toRanking(r: BackendRanking, positionRank: number): Ranking {
       completionPct: null,
       yardsPerAttempt: null,
     },
-    modelConfidence: r.avail_mean ?? 0,
+    projectedStats: {
+      targets: null,
+      receptions: null,
+      recYards: null,
+      recTds: null,
+      rushAttempts: null,
+      rushYards: null,
+      rushTds: null,
+      passAttempts: null,
+      completions: null,
+      passYards: null,
+      passTds: null,
+      interceptions: null,
+    },
     rookieYear: false,
     collegeTeam: null,
     depthChartPosition: 1,
@@ -112,7 +125,6 @@ export function toRanking(r: BackendRanking, positionRank: number): Ranking {
     redZoneUsage: null,
     tdProjection: 0,
     gamesPlayed: 17,
-    modelConfidence: r.avail_mean ?? 0,
   }
 }
 
