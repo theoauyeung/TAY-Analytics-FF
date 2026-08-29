@@ -78,7 +78,7 @@ export function AvailablePlayers() {
     <div className="flex flex-col h-full border-r border-border w-80 flex-shrink-0">
       {/* Header */}
       <div className="px-3 pt-3 pb-2 border-b border-border flex-shrink-0">
-        <div className="text-xs font-bold tracking-widest text-text-muted uppercase mb-2">
+        <div className="text-xs font-bold tracking-wide text-text-muted uppercase mb-2">
           Available Players
         </div>
 
@@ -95,16 +95,16 @@ export function AvailablePlayers() {
         </div>
 
         {/* Position filter tabs */}
-        <div className="flex rounded-lg overflow-hidden border border-border bg-bg-secondary">
+        <div className="flex gap-0.5">
           {POSITION_FILTERS.map(pos => (
             <button
               key={pos}
               onClick={() => setPosFilter(pos)}
               className={clsx(
-                'flex-1 py-1 text-xs font-medium transition-colors',
+                'flex-1 py-1 text-xs transition-colors border-b',
                 posFilter === pos
-                  ? 'bg-accent text-bg-primary'
-                  : 'text-text-muted hover:text-text-primary hover:bg-bg-elevated'
+                  ? 'text-text-primary font-semibold border-accent'
+                  : 'text-text-muted hover:text-text-secondary border-transparent'
               )}
             >
               {pos}

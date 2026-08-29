@@ -6,7 +6,7 @@ export function TierSeparator({ tier }: { tier: Tier }) {
       <td colSpan={20} className="py-1 px-3">
         <div className="flex items-center gap-3">
           <div className="h-px flex-1 bg-border" />
-          <span className="text-xs font-bold tracking-widest text-text-muted uppercase">
+          <span className="text-xs font-bold tracking-wide text-text-muted uppercase">
             {tier.label}
           </span>
           <div className="h-px flex-1 bg-border" />

@@ -89,7 +89,7 @@ export function MyRoster() {
     <div className="w-72 flex-shrink-0 border-l border-border flex flex-col overflow-hidden">
       {/* Header */}
       <div className="px-4 pt-3 pb-2 border-b border-border flex-shrink-0">
-        <div className="text-xs font-bold tracking-widest text-text-muted uppercase">My Roster</div>
+        <div className="text-xs font-bold tracking-wide text-text-muted uppercase">My Roster</div>
         <div className="text-xs text-text-muted mt-0.5">
           {userRoster.length} / {config.totalRounds} picks
         </div>
@@ -141,7 +141,7 @@ export function MyRoster() {
 
       {/* Roster assessment */}
       <div className="border-t border-border px-4 py-3 space-y-1.5 flex-shrink-0">
-        <div className="text-xs font-bold tracking-widest text-text-muted uppercase mb-2">
+        <div className="text-xs font-bold tracking-wide text-text-muted uppercase mb-2">
           Assessment
         </div>
         {POSITIONS.map(pos => {

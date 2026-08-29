@@ -58,7 +58,7 @@ export function RosterProjection({ roster, rosterConfig }: Props) {
         ))}
       </div>
       <div className="space-y-1">
-        <div className="text-xs font-bold tracking-widest text-text-muted uppercase mb-2">Starters</div>
+        <div className="text-xs font-bold tracking-wide text-text-muted uppercase mb-2">Starters</div>
         {starters.map(p => (
           <div key={p.id} className="flex items-center gap-2 bg-bg-elevated rounded-lg px-3 py-2">
             <span className="text-xs font-mono text-text-muted w-6">{p.position}</span>

@@ -12,7 +12,7 @@ export function ScarcityBar({ scarcity }: Props) {
 
   return (
     <div>
-      <div className="text-xs font-bold tracking-widest text-text-muted uppercase mb-3">
+      <div className="text-xs font-bold tracking-wide text-text-muted uppercase mb-3">
         Positional Scarcity
       </div>
       <div className="space-y-2.5">

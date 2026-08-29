@@ -57,7 +57,7 @@ export function RecommendationPanel() {
 
       {/* Header label */}
       <div className="flex items-center gap-2">
-        <span className="text-xs font-bold tracking-widest text-accent uppercase">
+        <span className="text-xs font-bold tracking-wide text-accent uppercase">
           {isShowingAlt ? 'Alternative Pick' : 'Your Pick'}
         </span>
         {isShowingAlt && (
@@ -71,7 +71,7 @@ export function RecommendationPanel() {
       </div>
 
       {/* Main player card */}
-      <div className="bg-bg-card border border-border rounded-2xl p-5">
+      <div className="bg-bg-card border border-border rounded-lg p-5">
         <div className="flex items-start gap-4 mb-4">
           {/* Headshot */}
           <div className="w-12 h-12 rounded-full overflow-hidden bg-bg-elevated flex-shrink-0">
@@ -117,7 +117,7 @@ export function RecommendationPanel() {
             { label: 'ADP', value: String(displayed.adp), highlight: false },
             { label: 'Avail', value: `${Math.round((1 - displayed.futureAvailability.probability) * 100)}%`, highlight: displayed.futureAvailability.probability < 0.4 },
           ].map(m => (
-            <div key={m.label} className="bg-bg-elevated rounded-xl p-2.5 text-center">
+            <div key={m.label} className="bg-bg-elevated rounded-md p-2.5 text-center">
               <div className="text-xs text-text-muted mb-0.5">{m.label}</div>
               <div className={clsx('text-base font-bold', m.highlight ? 'text-accent' : 'text-text-primary')}>
                 {m.value}
@@ -129,7 +129,7 @@ export function RecommendationPanel() {
         {/* Draft button */}
         <button
           onClick={() => draftPlayer(displayed.player, true)}
-          className="w-full py-2.5 bg-accent text-bg-primary text-sm font-bold rounded-xl hover:bg-accent-dim transition-colors"
+          className="w-full py-2.5 bg-accent text-bg-primary text-sm font-bold rounded-md hover:bg-accent-dim transition-colors"
         >
           Draft {displayed.player.name} (Mine)
         </button>
@@ -138,7 +138,7 @@ export function RecommendationPanel() {
       {/* WHY? */}
       {displayed.explanation.length > 0 && (
         <div>
-          <div className="text-xs font-bold tracking-widest text-text-muted uppercase mb-2">Why?</div>
+          <div className="text-xs font-bold tracking-wide text-text-muted uppercase mb-2">Why?</div>
           <div className="space-y-1.5">
             {displayed.explanation.map((ex, i) => (
               <div
@@ -171,7 +171,7 @@ export function RecommendationPanel() {
       {/* Alternatives */}
       {reco.alternatives.length > 0 && (
         <div>
-          <div className="text-xs font-bold tracking-widest text-text-muted uppercase mb-2">
+          <div className="text-xs font-bold tracking-wide text-text-muted uppercase mb-2">
             Alternatives
           </div>
           <div className="space-y-2">

@@ -35,7 +35,8 @@ export default {
         },
       },
       fontFamily: {
-        display: ['system-ui', '-apple-system', 'sans-serif'],
+        display: ['Barlow', 'system-ui', 'sans-serif'],
+        condensed: ['Barlow Condensed', 'system-ui', 'sans-serif'],
         mono: ['ui-monospace', 'SFMono-Regular', 'monospace'],
       },
     },

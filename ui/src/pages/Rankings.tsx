@@ -35,19 +35,11 @@ export default function Rankings() {
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       {/* Page header */}
-      <div className="border-b border-border px-6 py-4 bg-bg-secondary flex-shrink-0">
-        <div className="flex items-start justify-between mb-3">
+      <div className="border-b border-border px-6 pt-5 pb-3 bg-bg-secondary flex-shrink-0">
+        <div className="flex items-start justify-between mb-4">
           <div>
-            <h1 className="text-2xl font-bold text-text-primary">Fantasy Rankings</h1>
-            <div className="flex items-center gap-3 mt-1 text-xs text-text-muted">
-              <span>{filters.format.replace('_', '-').toUpperCase()}</span>
-              <span>·</span>
-              <span>12 Teams</span>
-              <span>·</span>
-              <span>2026 Projections</span>
-              <span>·</span>
-              <span className="text-text-secondary">Last updated: mock data</span>
-            </div>
+            <h1 className="text-2xl font-bold text-text-primary">Rankings</h1>
+            <p className="text-xs text-text-muted mt-0.5 font-condensed tracking-wide">PPR · 2026 Projections</p>
           </div>
           <ColumnToggle visibleColumns={visibleColumns} onChange={setVisibleColumns} />
         </div>
@@ -55,7 +47,7 @@ export default function Rankings() {
       </div>
 
       {/* Table — takes remaining height with internal scroll */}
-      <div className="flex-1 overflow-hidden px-6 py-4">
+      <div className="flex-1 overflow-hidden px-0 py-0">
         <div className="h-full overflow-auto">
           <RankingsTable
             rankings={rankings}

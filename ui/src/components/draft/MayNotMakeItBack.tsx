@@ -24,7 +24,7 @@ export function MayNotMakeItBack({ items, allRankings }: Props) {
     <div>
       <div className="flex items-center gap-2 mb-3">
         <AlertCircle size={13} className="text-yellow-400" />
-        <span className="text-xs font-bold tracking-widest text-yellow-400 uppercase">
+        <span className="text-xs font-bold tracking-wide text-yellow-400 uppercase">
           May Not Make It Back
         </span>
       </div>

@@ -70,7 +70,7 @@ export function OpponentPickPanel() {
       {/* Pick context header */}
       <div className="mb-5">
         <div className="flex items-center gap-3 mb-1">
-          <span className="text-xs font-bold tracking-widest text-text-muted uppercase">
+          <span className="text-xs font-bold tracking-wide text-text-muted uppercase">
             Round {round} · Pick {pickInRound}
           </span>
           <span className="text-xs text-text-muted">·</span>
@@ -101,7 +101,7 @@ export function OpponentPickPanel() {
           placeholder="Who did they pick? Search by name or team…"
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="w-full bg-bg-elevated border border-border rounded-xl pl-9 pr-4 py-2.5 text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-accent"
+          className="w-full bg-bg-elevated border border-border rounded-md pl-9 pr-4 py-2.5 text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-accent"
         />
       </div>
 
@@ -112,7 +112,7 @@ export function OpponentPickPanel() {
             key={ranking.player.id}
             onClick={() => handleOpponentPick(ranking.player)}
             className={clsx(
-              'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border border-transparent',
+              'w-full flex items-center gap-3 px-3 py-2.5 rounded-md border border-transparent',
               'hover:bg-bg-elevated hover:border-border transition-colors text-left'
             )}
           >

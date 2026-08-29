@@ -24,7 +24,7 @@ function MetricRow({ label, value, detail }: { label: string; value: string; det
 
 function SectionHeader({ title }: { title: string }) {
   return (
-    <div className="text-xs font-bold tracking-widest text-accent uppercase mt-5 mb-2">
+    <div className="text-xs font-bold tracking-wide text-accent uppercase mt-5 mb-2">
       {title}
     </div>
   )
@@ -95,7 +95,7 @@ export function PlayerDrawer({ playerId, onClose }: Props) {
           {player && (
             <>
               {/* Projection band */}
-              <div className="bg-bg-elevated rounded-xl p-4 grid grid-cols-3 gap-3 text-center">
+              <div className="bg-bg-elevated rounded-md p-4 grid grid-cols-3 gap-3 text-center">
                 <div>
                   <div className="text-xs text-text-muted mb-1">Floor</div>
                   <div className="text-xl font-bold text-text-secondary">{player.projection.floor.toFixed(0)}</div>

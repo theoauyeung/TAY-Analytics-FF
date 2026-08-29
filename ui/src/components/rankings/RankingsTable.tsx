@@ -11,7 +11,7 @@ interface Props {
 }
 
 export function RankingsTable({ rankings, visibleColumns, onPlayerClick, isLoading }: Props) {
-  const cols = visibleColumns.filter(c => c !== 'rank' && c !== 'player' && c !== 'tier')
+  const cols = visibleColumns.filter(c => c !== 'rank' && c !== 'player' && c !== 'tier' && c !== 'position' && c !== 'team')
 
   if (isLoading) {
     return (
@@ -22,20 +22,20 @@ export function RankingsTable({ rankings, visibleColumns, onPlayerClick, isLoadi
   }
 
   return (
-    <div className="overflow-auto rounded-lg border border-border">
+    <div className="overflow-auto">
       <table className="w-full text-sm border-collapse">
-        <thead className="sticky top-0 z-10 bg-bg-secondary border-b border-border">
-          <tr>
-            <th className="py-2.5 px-3 text-center text-xs font-semibold text-text-muted w-12">RK</th>
-            <th className="py-2.5 px-3 text-left text-xs font-semibold text-text-muted min-w-[200px] sticky left-0 bg-bg-secondary">PLAYER</th>
+        <thead className="sticky top-0 z-10 bg-bg-secondary">
+          <tr className="border-b-2 border-border">
+            <th className="py-2 px-4 text-center text-xs font-condensed font-semibold text-text-muted tracking-wide uppercase w-14">RK</th>
+            <th className="py-2 px-3 text-left text-xs font-condensed font-semibold text-text-muted tracking-wide uppercase min-w-[200px] sticky left-0 bg-bg-secondary">Player</th>
             {cols.map(col => (
-              <th key={col} className="py-2.5 px-3 text-right text-xs font-semibold text-text-muted whitespace-nowrap">
+              <th key={col} className="py-2 px-3 text-right text-xs font-condensed font-semibold text-text-muted tracking-wide uppercase whitespace-nowrap">
                 {COLUMN_LABELS[col]}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="bg-bg-card">
+        <tbody>
           {rankings.map(ranking => (
             <PlayerRow
               key={ranking.player.id}

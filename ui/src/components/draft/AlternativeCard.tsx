@@ -18,7 +18,7 @@ export function AlternativeCard({ player, onDraftMe, isSelected, onClick }: Prop
       onClick={onClick}
       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') onClick?.() }}
       className={clsx(
-        'w-full text-left p-3 rounded-xl border transition-colors',
+        'w-full text-left p-3 rounded-md border transition-colors',
         isSelected
           ? 'border-accent bg-accent-muted'
           : 'border-border bg-bg-elevated hover:border-accent/50 hover:bg-bg-elevated'

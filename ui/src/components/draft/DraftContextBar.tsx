@@ -21,12 +21,12 @@ export function DraftContextBar() {
       {/* Round / Pick */}
       <div className="flex items-center gap-3">
         <div className="text-center">
-          <div className="text-xs text-text-muted uppercase tracking-widest leading-tight">Round</div>
+          <div className="text-xs text-text-muted uppercase tracking-wide leading-tight">Round</div>
           <div className="text-lg font-bold text-text-primary leading-tight">{currentRound}</div>
         </div>
         <div className="w-px h-8 bg-border" />
         <div className="text-center">
-          <div className="text-xs text-text-muted uppercase tracking-widest leading-tight">Pick</div>
+          <div className="text-xs text-text-muted uppercase tracking-wide leading-tight">Pick</div>
           <div className="text-lg font-bold text-text-primary leading-tight">
             {Math.min(currentOverallPick, totalPicks)}
           </div>

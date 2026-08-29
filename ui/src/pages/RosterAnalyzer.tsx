@@ -59,7 +59,7 @@ export default function RosterAnalyzer() {
           <h2 className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-3">
             Positional Strength
           </h2>
-          <div className="bg-bg-card border border-border rounded-xl p-4">
+          <div className="bg-bg-card border border-border rounded-md p-4">
             <PositionStrengthBars roster={roster} rosterConfig={config} />
           </div>
         </section>
@@ -70,7 +70,7 @@ export default function RosterAnalyzer() {
             <h2 className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-3">
               Primary Need
             </h2>
-            <div className="bg-bg-card border border-accent/30 rounded-xl p-4">
+            <div className="bg-bg-card border border-accent/30 rounded-md p-4">
               <div className="text-sm text-text-primary">
                 You need more <span className="font-semibold text-accent">{primaryNeed}</span>. Starter slot unfilled.
               </div>

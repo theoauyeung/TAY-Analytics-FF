@@ -32,22 +32,22 @@ export function PlayerRow({ ranking, visibleColumns, onClick, isDrafted = false 
     <tr
       onClick={onClick}
       className={clsx(
-        'border-b border-border/50 cursor-pointer transition-colors group',
+        'border-b border-border/30 cursor-pointer transition-colors group',
         isDrafted
           ? 'opacity-40 pointer-events-none'
-          : 'hover:bg-bg-elevated'
+          : 'hover:bg-bg-elevated/60'
       )}
     >
       {/* Rank */}
-      <td className="py-2.5 px-3 text-center w-12">
-        <span className="text-sm font-mono text-text-muted">{ranking.rank}</span>
+      <td className="py-3 px-4 text-center w-14">
+        <span className="text-base font-bold font-mono text-text-muted">{ranking.rank}</span>
       </td>
 
       {/* Player name — sticky, most prominent */}
-      <td className="py-2.5 px-3 min-w-[200px] sticky left-0 bg-bg-card group-hover:bg-bg-elevated transition-colors">
-        <div className="flex items-center gap-2.5">
+      <td className="py-3 px-3 min-w-[200px] sticky left-0 bg-bg-primary group-hover:bg-bg-elevated/60 transition-colors">
+        <div className="flex items-center gap-3">
           {/* Headshot */}
-          <div className="w-8 h-8 rounded-full overflow-hidden bg-bg-elevated flex-shrink-0">
+          <div className="w-9 h-9 rounded-full overflow-hidden bg-bg-elevated flex-shrink-0">
             {player.imageUrl ? (
               <img
                 src={player.imageUrl}
@@ -62,14 +62,15 @@ export function PlayerRow({ ranking, visibleColumns, onClick, isDrafted = false 
             )}
           </div>
           <div>
-            <div className="font-semibold text-sm text-text-primary leading-tight flex items-center gap-1.5">
+            <div className="font-semibold text-sm text-text-primary leading-tight flex items-center gap-2">
               {player.name}
-              {isUndervalued && <SignalBadge signal="value" label="Value" />}
-              {isOvervalued && <SignalBadge signal="avoid" label="Overvalued" />}
+              {isUndervalued && <SignalBadge signal="value" label="▲ Value" />}
+              {isOvervalued && <SignalBadge signal="avoid" label="▼ Fade" />}
               {hasInjury && <SignalBadge signal="injury" label={player.injuryStatus ?? ''} />}
             </div>
-            <div className="text-xs text-text-muted">
-              {player.team}
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <PositionBadge position={player.position} />
+              <span className="text-xs text-text-muted">{player.team}</span>
             </div>
           </div>
         </div>

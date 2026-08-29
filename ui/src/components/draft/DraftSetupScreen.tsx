@@ -30,7 +30,7 @@ export function DraftSetupScreen() {
 
   return (
     <div className="h-screen flex items-center justify-center bg-bg-primary">
-      <div className="w-full max-w-md mx-4 bg-bg-card border border-border rounded-2xl p-8 space-y-8">
+      <div className="w-full max-w-md mx-4 bg-bg-card border border-border rounded-lg p-8 space-y-8">
         {/* Title */}
         <div className="text-center">
           <h1 className="text-2xl font-bold text-text-primary">Draft Setup</h1>
@@ -39,7 +39,7 @@ export function DraftSetupScreen() {
 
         {/* Teams */}
         <div className="space-y-3">
-          <label className="text-xs font-bold tracking-widest text-text-muted uppercase">
+          <label className="text-xs font-bold tracking-wide text-text-muted uppercase">
             League Size
           </label>
           <div className="flex gap-2">
@@ -48,7 +48,7 @@ export function DraftSetupScreen() {
                 key={t}
                 onClick={() => handleTeamsChange(t)}
                 className={clsx(
-                  'flex-1 py-2.5 rounded-xl text-sm font-bold border transition-colors',
+                  'flex-1 py-2.5 rounded-md text-sm font-bold border transition-colors',
                   teams === t
                     ? 'bg-accent text-bg-primary border-accent'
                     : 'bg-bg-elevated text-text-secondary border-border hover:border-accent hover:text-text-primary'
@@ -62,7 +62,7 @@ export function DraftSetupScreen() {
 
         {/* Pick position grid */}
         <div className="space-y-3">
-          <label className="text-xs font-bold tracking-widest text-text-muted uppercase">
+          <label className="text-xs font-bold tracking-wide text-text-muted uppercase">
             Your Draft Position
           </label>
           <div className="grid grid-cols-6 gap-2">
@@ -71,7 +71,7 @@ export function DraftSetupScreen() {
                 key={pos}
                 onClick={() => setPickPos(pos)}
                 className={clsx(
-                  'py-2.5 rounded-xl text-sm font-bold border transition-colors',
+                  'py-2.5 rounded-md text-sm font-bold border transition-colors',
                   pickPos === pos
                     ? 'bg-accent text-bg-primary border-accent'
                     : 'bg-bg-elevated text-text-secondary border-border hover:border-accent hover:text-text-primary'
@@ -89,7 +89,7 @@ export function DraftSetupScreen() {
         {/* Start button */}
         <button
           onClick={handleStart}
-          className="w-full py-3.5 bg-accent text-bg-primary text-sm font-bold rounded-xl hover:opacity-90 transition-opacity"
+          className="w-full py-3.5 bg-accent text-bg-primary text-sm font-bold rounded-md hover:opacity-90 transition-opacity"
         >
           Start Draft
         </button>

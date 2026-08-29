@@ -19,27 +19,27 @@ export default function Sidebar() {
   return (
     <aside className="fixed left-0 top-0 h-screen w-56 bg-bg-secondary border-r border-border flex flex-col z-40">
       {/* Logo */}
-      <div className="h-16 flex items-center px-5 border-b border-border">
-        <span className="text-accent font-bold text-lg tracking-tight">TAY</span>
-        <span className="text-text-primary font-bold text-lg ml-1">Analytics</span>
+      <div className="h-16 flex items-center px-4 border-b border-border gap-3">
+        <img src="/theo-logo.png" alt="THEO" className="h-8 w-8 object-contain" style={{ filter: 'invert(1) brightness(0.85)' }} />
+        <span className="text-text-primary font-semibold text-sm tracking-wide">TAY Analytics</span>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 py-4 overflow-y-auto">
+      <nav className="flex-1 py-3 overflow-y-auto">
         {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
             className={({ isActive }) =>
               clsx(
-                'flex items-center gap-3 px-5 py-2.5 text-sm transition-colors',
+                'flex items-center gap-3 px-5 py-2.5 text-sm transition-colors border-l-2',
                 isActive
-                  ? 'text-accent bg-accent-muted border-r-2 border-accent'
-                  : 'text-text-secondary hover:text-text-primary hover:bg-bg-elevated'
+                  ? 'text-text-primary border-accent bg-bg-elevated/50 font-medium'
+                  : 'text-text-muted hover:text-text-secondary hover:bg-bg-elevated/30 border-transparent'
               )
             }
           >
-            <Icon size={16} />
+            <Icon size={15} className="flex-shrink-0" />
             {label}
           </NavLink>
         ))}

@@ -104,7 +104,7 @@ export default function Players() {
             </div>
           </div>
 
-          <div className="bg-bg-card border border-border rounded-xl p-4">
+          <div className="bg-bg-card border border-border rounded-md p-4">
             <ProjectionChart player={selectedRanking.player} />
           </div>
 
@@ -122,7 +122,7 @@ export default function Players() {
             ))}
           </div>
 
-          <div className="bg-bg-card border border-border rounded-xl p-4">
+          <div className="bg-bg-card border border-border rounded-md p-4">
             <ComparablePlayers ranking={selectedRanking} allRankings={rankings} />
           </div>
         </div>

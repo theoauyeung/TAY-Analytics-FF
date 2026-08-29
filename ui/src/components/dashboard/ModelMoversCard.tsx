@@ -9,7 +9,7 @@ interface Props {
 
 export function ModelMoversCard({ rising, falling }: Props) {
   return (
-    <div className="bg-bg-card border border-border rounded-xl p-4">
+    <div className="bg-bg-card border border-border rounded-md p-4">
       <div className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-3">
         Model vs Market
       </div>
