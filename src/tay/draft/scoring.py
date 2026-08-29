@@ -4,7 +4,8 @@ from tay.draft.models import DraftState, PlayerProjection, Recommendation
 
 _FLEX_ELIGIBLE = {'RB', 'WR', 'TE'}
 _STARTER_REQUIREMENTS = {'QB': 1, 'RB': 2, 'WR': 2, 'TE': 1}
-_FLEX_SPOTS = 1  # extra RB/WR/TE slot before position is truly "covered"
+_FLEX_SPOTS = 1
+_SCARCITY_THRESHOLDS: dict[str, int] = {'QB': 4, 'TE': 4, 'RB': 8, 'WR': 8}
 
 
 def future_availability(player: PlayerProjection, current_pick: int, picks_until_next: int) -> float:
@@ -14,21 +15,8 @@ def future_availability(player: PlayerProjection, current_pick: int, picks_until
     if adp <= 0 or adp >= 500:
         return 1.0
     adp_std = max(2.0, adp * 0.25)
-    # z > 0: next_pick > ADP → player likely gone before next pick
-    # z < 0: next_pick < ADP → player will still be available
     z = (next_pick - adp) / adp_std
-    # Linear: z=-2 → fa≈1.0, z=0 → fa=0.5, z=2 → fa≈0.0
     return max(0.0, min(1.0, 0.5 - 0.25 * z))
-
-
-def positional_urgency(
-    position: str,
-    available_at_position: int,
-    replacement_spots: dict[str, int],
-) -> float:
-    """Scarcity score [0, 1] — 1 means position is nearly exhausted."""
-    cap = replacement_spots.get(position, 30)
-    return max(0.0, min(1.0, 1.0 - available_at_position / cap))
 
 
 def roster_fit(
@@ -44,21 +32,15 @@ def roster_fit(
 
     score = 1.0
     if filled == 0:
-        score += 0.2   # bonus: unfilled starter slot at this position
+        score += 0.2
     elif pos in _FLEX_ELIGIBLE:
-        # For flex-eligible positions, don't penalize until starters + flex are covered.
-        # Count total RB+WR+TE drafted; only apply penalty when the combined pool
-        # exceeds the required starters across all flex positions plus the flex spot.
         total_skill_filled = sum(len(user_roster.get(p, [])) for p in _FLEX_ELIGIBLE)
-        total_skill_required = sum(
-            requirements.get(p, 0) for p in _FLEX_ELIGIBLE
-        ) + _FLEX_SPOTS
+        total_skill_required = sum(requirements.get(p, 0) for p in _FLEX_ELIGIBLE) + _FLEX_SPOTS
         if filled >= required and total_skill_filled >= total_skill_required:
-            score -= 0.3   # starter + flex both covered — truly redundant
-        # else: starters covered but flex still open, no penalty
+            score -= 0.3
     else:
         if filled >= required:
-            score -= 0.3   # penalty: position already covered
+            score -= 0.3
 
     return max(0.5, min(1.2, score))
 
@@ -66,61 +48,107 @@ def roster_fit(
 def score_player(
     player: PlayerProjection,
     state: DraftState,
-    available_by_position: dict[str, int],
-    replacement_spots: dict[str, int],
+    board: 'BoardAnalysis',
 ) -> Recommendation:
-    """Compute Draft Score and build explanation for one player."""
-    fa = future_availability(player, state.current_pick, state.picks_until_next)
-    pu = positional_urgency(
-        player.position,
-        available_by_position.get(player.position, 30),
-        replacement_spots,
-    )
+    """Compute Draft Score and structured explanation for one player."""
+    from tay.draft.board import BoardAnalysis  # local import avoids circular dependency
+
+    pos_board = board.per_position.get(player.position)
+
+    # Survival probability (next pick)
+    if pos_board and player.gsis_id in pos_board.survival_probs:
+        survival_prob = pos_board.survival_probs[player.gsis_id][0]
+    else:
+        survival_prob = future_availability(player, state.current_pick, state.picks_until_next)
+
+    # Cliff premium: +0.3 if player is the last in their tier
+    cliff_premium = 0.0
+    cliff_ids: set[str] = set()
+    if pos_board:
+        cliff_ids = {cliff.before_player.gsis_id for cliff in pos_board.tier_cliffs}
+        if player.gsis_id in cliff_ids:
+            cliff_premium = 0.3
+
+    # Scarcity premium: 0–0.5 based on remaining tier-1-through-3 players
+    scarcity_premium = 0.0
+    if pos_board:
+        threshold = _SCARCITY_THRESHOLDS.get(player.position, 8)
+        top_tier_count = sum(1 for p in pos_board.available if (p.tier or 5) <= 3)
+        scarcity_premium = max(0.0, min(0.5, 0.5 * (1.0 - top_tier_count / threshold)))
+
     rf = roster_fit(player, state.user_roster, state.league_settings.roster_config)
+    urgency_factor = 1.0 + cliff_premium + scarcity_premium
+    now_vs_wait = 1.5 - 0.5 * survival_prob
 
-    base_value = player.vor
-    # Urgency multiplier: low fa (player likely gone at next pick) → 1.5x; high fa (can wait) → 1.0x
-    draft_score = (base_value * rf * (1.0 + pu)) * (1.5 - 0.5 * fa)
+    draft_score = player.vor * urgency_factor * rf * now_vs_wait
 
-    # QB patience: there are always enough draftable QBs for every team.
-    # Suppress QB recommendations until the user has built a skill position core
-    # or we're deep enough that QB pool genuinely starts thinning.
+    # QB patience suppression
     if player.position == 'QB' and len(state.user_roster.get('QB', [])) == 0:
-        user_skill_count = (
-            len(state.user_roster.get('RB', []))
-            + len(state.user_roster.get('WR', []))
-            + len(state.user_roster.get('TE', []))
+        user_skill_count = sum(
+            len(state.user_roster.get(p, [])) for p in ('RB', 'WR', 'TE')
         )
-        teams = state.league_settings.teams
-        # Don't recommend QB until user has 4 skill players OR past round 7
-        if user_skill_count < 4 and state.current_pick <= teams * 7:
+        if user_skill_count < 4 and state.current_pick <= state.league_settings.teams * 7:
             draft_score *= 0.5
 
-    explanation: list[str] = []
+    # Structured explanation
+    explanation: list[dict[str, str]] = []
+
     if player.vor > 20:
-        explanation.append(f"High value: {player.vor:.0f} VOR points above replacement")
+        explanation.append({
+            'factor': 'High Value',
+            'detail': f'{player.vor:.0f} VOR points above replacement',
+            'weight': 'primary',
+        })
+
+    if cliff_premium > 0:
+        explanation.append({
+            'factor': 'Tier Cliff',
+            'detail': f'Last available {player.position} in this tier — next group is significantly weaker',
+            'weight': 'primary',
+        })
+
+    if survival_prob < 0.35:
+        gone_pct = round((1 - survival_prob) * 100)
+        explanation.append({
+            'factor': 'At Risk',
+            'detail': f'{gone_pct}% chance gone before your next pick',
+            'weight': 'risk',
+        })
+
+    if scarcity_premium > 0.3 and pos_board:
+        top_tier = sum(1 for p in pos_board.available if (p.tier or 5) <= 3)
+        explanation.append({
+            'factor': 'Positional Scarcity',
+            'detail': f'Only {top_tier} quality {player.position}s remain',
+            'weight': 'primary',
+        })
+
     if player.adp - player.vor_rank > 15:
-        explanation.append(
-            f"Undervalued: ADP {player.adp:.0f} vs model rank #{player.vor_rank}"
-        )
-    avail_at_pos = available_by_position.get(player.position, 30)
-    if pu > 0.6:
-        explanation.append(
-            f"Positional scarcity: only {avail_at_pos} {player.position}s remain"
-        )
-    next_pick = state.current_pick + state.picks_until_next
-    if fa < 0.5:
-        explanation.append(f"May not be available at pick {next_pick}")
+        explanation.append({
+            'factor': 'Undervalued',
+            'detail': f'ADP {player.adp:.0f} vs model rank #{player.vor_rank}',
+            'weight': 'secondary',
+        })
+
     if player.sim_boom_prob > 0.3:
-        explanation.append(f"High upside: {player.sim_boom_prob:.0%} boom probability")
+        explanation.append({
+            'factor': 'Upside',
+            'detail': f'{player.sim_boom_prob:.0%} boom probability',
+            'weight': 'secondary',
+        })
+
     if not explanation:
-        explanation.append(f"Solid value at pick {state.current_pick}")
+        explanation.append({
+            'factor': 'Solid Value',
+            'detail': f'Good pick at position {state.current_pick}',
+            'weight': 'secondary',
+        })
 
     return Recommendation(
         player=player,
         draft_score=draft_score,
         roster_fit=rf,
-        positional_urgency=pu,
-        future_availability_pct=fa,
+        positional_urgency=scarcity_premium,
+        future_availability_pct=survival_prob,
         explanation=explanation,
     )
