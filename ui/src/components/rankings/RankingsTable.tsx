@@ -40,7 +40,7 @@ export function RankingsTable({ rankings, visibleColumns, onPlayerClick, isLoadi
             <PlayerRow
               key={ranking.player.id}
               ranking={ranking}
-              visibleColumns={visibleColumns.filter(c => c !== 'tier')}
+              visibleColumns={cols}
               onClick={() => onPlayerClick(ranking.player.id)}
             />
           ))}
