@@ -20,6 +20,8 @@ def _to_draft_state(body: DraftStateIn) -> DraftState:
         scoring=body.league_settings.scoring,
         roster_config=body.league_settings.roster_config,
     )
+    drafted_ids = [e.gsis_id for e in body.pick_log]
+    pick_log = [(e.gsis_id, e.team_number, e.position) for e in body.pick_log]
     return DraftState(
         season=body.season,
         model_version=body.model_version,
@@ -27,8 +29,9 @@ def _to_draft_state(body: DraftStateIn) -> DraftState:
         current_pick=body.current_pick,
         total_picks=body.total_picks,
         user_pick_position=body.user_pick_position,
-        drafted_ids=list(body.drafted_ids),
+        drafted_ids=drafted_ids,
         user_roster={k: list(v) for k, v in body.user_roster.items()},
+        pick_log=pick_log,
     )
 
 

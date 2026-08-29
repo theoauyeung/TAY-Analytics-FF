@@ -97,6 +97,12 @@ class LeagueSettingsSchema(BaseModel):
     )
 
 
+class PickEntry(BaseModel):
+    gsis_id: str
+    team_number: int
+    position: str
+
+
 class DraftStateIn(BaseModel):
     season: int = 2026
     model_version: str = 'neural-v1'
@@ -104,7 +110,7 @@ class DraftStateIn(BaseModel):
     current_pick: int = 1
     total_picks: int = 180
     user_pick_position: int = 1
-    drafted_ids: list[str] = Field(default_factory=list)
+    pick_log: list[PickEntry] = Field(default_factory=list)
     user_roster: dict[str, list[str]] = Field(
         default_factory=lambda: {'QB': [], 'RB': [], 'WR': [], 'TE': [], 'FLEX': []}
     )
