@@ -44,7 +44,7 @@ export function OpponentPickPanel() {
     [picks]
   )
 
-  // Available players filtered by search, sorted by our rank
+  // Available players filtered by search, sorted by ADP
   const available = useMemo(() => {
     return rankings
       .filter(r => !draftedSet.has(r.player.id))
@@ -57,6 +57,7 @@ export function OpponentPickPanel() {
           r.player.position.toLowerCase().includes(q)
         )
       })
+      .sort((a, b) => (a.adp ?? 999) - (b.adp ?? 999))
       .slice(0, search ? 20 : 12)
   }, [rankings, draftedSet, search])
 
