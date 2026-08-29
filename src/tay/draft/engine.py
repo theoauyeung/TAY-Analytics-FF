@@ -52,29 +52,30 @@ def load_projections(
     ]
 
 
-def _compute_next_user_picks(state: DraftState, n: int = 3) -> list[int]:
-    """Next n overall pick numbers for the user in a snake draft."""
-    teams = state.league_settings.teams
-    picks: list[int] = []
-    pick = state.current_pick
-    while len(picks) < n and pick <= state.total_picks:
-        round_num = (pick - 1) // teams + 1
-        pick_in_round = ((pick - 1) % teams) + 1
-        user_pick_in_round = (
-            state.user_pick_position if round_num % 2 == 1
-            else teams - state.user_pick_position + 1
-        )
-        if pick_in_round == user_pick_in_round:
-            picks.append(pick)
-        pick += 1
-    while len(picks) < n:
-        picks.append(state.total_picks + 1)
-    return picks
+def _compute_next_user_picks(
+    current_pick: int,
+    teams: int,
+    user_pick_position: int,
+    total_rounds: int,
+) -> list[int]:
+    """All upcoming snake-draft pick numbers for the user, starting from current_pick."""
+    total_picks = teams * total_rounds
+    all_pick_numbers: list[int] = []
+    for round_num in range(1, total_rounds + 1):
+        if round_num % 2 == 1:
+            pick_in_round = user_pick_position
+        else:
+            pick_in_round = teams - user_pick_position + 1
+        pick_number = (round_num - 1) * teams + pick_in_round
+        all_pick_numbers.append(pick_number)
+    return [p for p in all_pick_numbers if p >= current_pick]
 
 
 def _build_wait_analysis(board, scored: list) -> list[WaitScenario]:
     """One WaitScenario per unique position in the top 5 scored players."""
     top5_positions = list(dict.fromkeys(r.player.position for r in scored[:5]))
+    if len(set(top5_positions)) <= 1:
+        return []
     scenarios: list[WaitScenario] = []
 
     for pos in top5_positions:
@@ -123,7 +124,7 @@ def _build_next_round_board(board) -> dict[str, NextRoundPositionSummary]:
             position=pos,
             strong_options_remaining=strong,
             next_cliff_rank=next_cliff.rank_at_cliff if next_cliff else None,
-            cliff_warning=(next_cliff is not None and next_cliff.rank_at_cliff <= 4),
+            cliff_warning=bool(pos_board.tier_cliffs),
         )
     return result
 
@@ -134,7 +135,14 @@ def recommend(
 ) -> RecommendationState:
     players = load_projections(conn, state.season, state.model_version, state.drafted_ids)
 
-    user_pick_numbers = _compute_next_user_picks(state, n=3)
+    teams = state.league_settings.teams
+    total_rounds = state.total_picks // teams
+    user_pick_numbers = _compute_next_user_picks(
+        current_pick=state.current_pick,
+        teams=teams,
+        user_pick_position=state.user_pick_position,
+        total_rounds=total_rounds,
+    )
 
     board = build_board_analysis(
         players=players,
