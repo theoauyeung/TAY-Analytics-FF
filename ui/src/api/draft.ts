@@ -1,6 +1,7 @@
 import type {
   Position, PlayerDetail, LiveDraftState,
   RecommendationState, FutureAvailability, Tier, TierLabel,
+  WaitScenario, NextRoundPositionSummary,
 } from '../types'
 import { apiFetch, SEASON, MODEL_VERSION } from './client'
 
@@ -18,13 +19,36 @@ interface BackendPlayerProjection {
   tier: number | null
 }
 
+interface BackendExplanation {
+  factor: string
+  detail: string
+  weight: string
+}
+
 interface BackendRecommendation {
   player: BackendPlayerProjection
   draft_score: number
   roster_fit: number
   positional_urgency: number
   future_availability_pct: number
-  explanation: string[]
+  explanation: BackendExplanation[]
+}
+
+interface BackendWaitScenario {
+  position: string
+  best_now_name: string
+  best_now_vor: number
+  expected_vor_at_next_pick: number
+  vor_cost_of_waiting: number
+  cliff_before_next_pick: boolean
+  survival_probability: number
+}
+
+interface BackendNextRoundSummary {
+  position: string
+  strong_options_remaining: number
+  next_cliff_rank: number | null
+  cliff_warning: boolean
 }
 
 interface BackendRecommendationState {
@@ -32,6 +56,8 @@ interface BackendRecommendationState {
   alternatives: BackendRecommendation[]
   positional_needs: string[]
   may_not_make_it_back: BackendPlayerProjection[]
+  wait_analysis: BackendWaitScenario[]
+  next_round_board: Record<string, BackendNextRoundSummary>
   board_state: { current_pick: number; round: number; picks_until_next: number }
 }
 
@@ -146,11 +172,32 @@ function mapRecommendation(r: BackendRecommendation): RecommendationState['topPi
       probability: prob,
       label: prob > 0.7 ? 'urgent' : prob > 0.3 ? 'monitor' : 'safe',
     } as FutureAvailability,
-    explanation: r.explanation.map(s => ({
-      factor: '',
-      detail: s,
-      weight: 'secondary' as const,
+    explanation: r.explanation.map(e => ({
+      factor: e.factor,
+      detail: e.detail,
+      weight: e.weight as 'primary' | 'secondary' | 'risk',
     })),
+  }
+}
+
+function mapWaitScenario(w: BackendWaitScenario): WaitScenario {
+  return {
+    position: w.position,
+    bestNowName: w.best_now_name,
+    bestNowVor: w.best_now_vor,
+    expectedVorAtNextPick: w.expected_vor_at_next_pick,
+    vorCostOfWaiting: w.vor_cost_of_waiting,
+    cliffBeforeNextPick: w.cliff_before_next_pick,
+    survivalProbability: w.survival_probability,
+  }
+}
+
+function mapNextRoundSummary(s: BackendNextRoundSummary): NextRoundPositionSummary {
+  return {
+    position: s.position,
+    strongOptionsRemaining: s.strong_options_remaining,
+    nextCliffRank: s.next_cliff_rank,
+    cliffWarning: s.cliff_warning,
   }
 }
 
@@ -172,7 +219,11 @@ function toDraftStateIn(state: LiveDraftState) {
     current_pick: state.currentOverallPick,
     total_picks: state.config.teams * state.config.totalRounds,
     user_pick_position: state.config.userPickPosition,
-    drafted_ids: state.picks.map(p => p.player.id),
+    pick_log: state.picks.map(p => ({
+      gsis_id: p.player.id,
+      team_number: p.teamNumber,
+      position: p.player.position,
+    })),
     user_roster: (() => {
       const roster: Record<string, string[]> = {}
       for (const pick of state.picks.filter(p => p.isUserPick)) {
@@ -213,7 +264,10 @@ export async function fetchRecommendation(state: LiveDraftState): Promise<Recomm
     topPick: mapRecommendation(data.top_pick),
     alternatives: data.alternatives.map(mapRecommendation),
     positionalNeeds,
-    scarcity: [],
+    waitAnalysis: data.wait_analysis.map(mapWaitScenario),
+    nextRoundBoard: Object.fromEntries(
+      Object.entries(data.next_round_board).map(([pos, s]) => [pos, mapNextRoundSummary(s)])
+    ),
     mayNotMakeItBack,
   }
 }
@@ -229,8 +283,6 @@ export async function saveSession(sessionId: string, state: LiveDraftState): Pro
   })
 }
 
-// Backend SessionOut cannot reconstruct full LiveDraftState (pick order/team lost).
-// Save is supported; restore is deferred to a future plan.
 export async function loadSession(_sessionId: string): Promise<LiveDraftState | null> {
   return null
 }
