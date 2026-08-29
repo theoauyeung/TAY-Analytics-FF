@@ -210,7 +210,7 @@ export function AvailablePlayers() {
                     }}
                     className="text-xs text-text-muted hover:text-text-primary transition-colors"
                   >
-                    ✕
+                    ×
                   </button>
                 </div>
               )}

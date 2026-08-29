@@ -41,7 +41,7 @@ export function DraftContextBar() {
         isDraftComplete
           ? 'bg-border text-text-muted'
           : isUserTurn
-            ? 'bg-accent text-bg-primary animate-pulse'
+            ? 'bg-accent text-bg-primary'
             : 'bg-bg-elevated text-text-secondary'
       )}>
         {isDraftComplete

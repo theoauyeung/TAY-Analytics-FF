@@ -46,8 +46,8 @@ function MockDraftInner() {
       {!isDraftComplete && (
         <div className="flex items-center gap-3 px-4 py-2 bg-bg-secondary border-b border-border">
           {isUserTurn ? (
-            <span className="text-sm text-accent font-medium animate-pulse">
-              Your pick — select from the left panel
+            <span className="text-sm text-accent font-medium">
+              Your pick
             </span>
           ) : autoAdvancing ? (
             <>
@@ -64,7 +64,7 @@ function MockDraftInner() {
               onClick={startAutoAdvance}
               className="text-xs px-3 py-1 bg-accent-muted border border-accent/30 text-accent rounded hover:bg-accent hover:text-bg-primary transition-colors"
             >
-              Simulate to my turn →
+              Simulate to my turn
             </button>
           )}
         </div>

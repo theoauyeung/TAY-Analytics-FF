@@ -24,7 +24,7 @@ export default function Settings() {
     <div className="p-6 max-w-2xl space-y-8 overflow-y-auto h-full">
       <div>
         <h1 className="text-xl font-bold text-text-primary">Settings</h1>
-        <p className="text-sm text-text-secondary mt-0.5">League configuration — saved automatically</p>
+        <p className="text-sm text-text-secondary mt-0.5">League configuration · Saved automatically</p>
       </div>
 
       {/* Scoring Format */}

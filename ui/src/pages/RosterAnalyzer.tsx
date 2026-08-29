@@ -72,7 +72,7 @@ export default function RosterAnalyzer() {
             </h2>
             <div className="bg-bg-card border border-accent/30 rounded-xl p-4">
               <div className="text-sm text-text-primary">
-                You need more <span className="font-semibold text-accent">{primaryNeed}</span> — starter slot unfilled
+                You need more <span className="font-semibold text-accent">{primaryNeed}</span>. Starter slot unfilled.
               </div>
             </div>
           </section>

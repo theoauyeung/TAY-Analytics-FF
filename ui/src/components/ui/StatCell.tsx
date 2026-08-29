@@ -34,7 +34,7 @@ export function StatCell({ value, label, detail, className, positive, negative }
       {open && detail && (
         <div className="absolute z-50 top-6 left-0 w-56 bg-bg-elevated border border-border rounded-lg p-3 shadow-xl text-xs text-text-secondary">
           {detail}
-          <button onClick={() => setOpen(false)} className="mt-2 text-text-muted hover:text-text-primary">✕ close</button>
+          <button onClick={() => setOpen(false)} className="mt-2 text-text-muted hover:text-text-primary">close</button>
         </div>
       )}
     </span>

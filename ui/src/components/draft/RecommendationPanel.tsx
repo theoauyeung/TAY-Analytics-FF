@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Zap, AlertTriangle } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
 import clsx from 'clsx'
 import { useDraftState } from '../../hooks/useDraftState'
 import { useRecommendation } from '../../hooks/useRecommendation'
@@ -57,9 +57,8 @@ export function RecommendationPanel() {
 
       {/* Header label */}
       <div className="flex items-center gap-2">
-        <Zap size={14} className="text-accent" />
-        <span className="text-xs font-bold tracking-widest text-accent uppercase animate-pulse">
-          {isShowingAlt ? 'Alternative Pick' : 'Your Pick — Choose Wisely'}
+        <span className="text-xs font-bold tracking-widest text-accent uppercase">
+          {isShowingAlt ? 'Alternative Pick' : 'Your Pick'}
         </span>
         {isShowingAlt && (
           <button

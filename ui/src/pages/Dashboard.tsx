@@ -42,7 +42,7 @@ export default function Dashboard() {
     <div className="p-6 space-y-6 overflow-y-auto h-full">
       <div>
         <h1 className="text-xl font-bold text-text-primary">Dashboard</h1>
-        <p className="text-sm text-text-secondary mt-0.5">2026 Season — Live Data</p>
+        <p className="text-sm text-text-secondary mt-0.5">2026 Season</p>
       </div>
 
       {isLoading ? (
@@ -66,7 +66,7 @@ export default function Dashboard() {
         </div>
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-green-400" />
-          <span className="text-sm text-text-secondary">Connected to live backend — 2026 neural-v1 model</span>
+          <span className="text-sm text-text-secondary">Connected · 2026 neural-v1 model</span>
         </div>
       </div>
     </div>
