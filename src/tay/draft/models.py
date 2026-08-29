@@ -105,6 +105,6 @@ class RecommendationState:
     alternatives: list[Recommendation]
     positional_needs: list[str]                             # positions by urgency
     may_not_make_it_back: list[PlayerProjection]
-    wait_analysis: list[WaitScenario]
-    next_round_board: dict[str, NextRoundPositionSummary]
-    board_state: dict                                        # {current_pick, round, picks_until_next}
+    wait_analysis: list[WaitScenario] = field(default_factory=list)
+    next_round_board: dict[str, NextRoundPositionSummary] = field(default_factory=dict)
+    board_state: dict = field(default_factory=dict)         # {current_pick, round, picks_until_next}
