@@ -7,13 +7,6 @@ export interface FutureAvailability {
   label: 'safe' | 'monitor' | 'urgent'
 }
 
-export interface PositionalScarcity {
-  position: Position
-  viableRemaining: number
-  scarcityScore: number   // 0–1
-  tierRemaining: number
-}
-
 export interface RecommendationExplanation {
   factor: string
   detail: string
@@ -22,8 +15,25 @@ export interface RecommendationExplanation {
 
 export interface ScoredPlayer {
   player: PlayerDetail
-  score: number                        // 0–1 composite draft score
+  score: number
   explanation: RecommendationExplanation[]
+}
+
+export interface WaitScenario {
+  position: string
+  bestNowName: string
+  bestNowVor: number
+  expectedVorAtNextPick: number
+  vorCostOfWaiting: number
+  cliffBeforeNextPick: boolean
+  survivalProbability: number
+}
+
+export interface NextRoundPositionSummary {
+  position: string
+  strongOptionsRemaining: number
+  nextCliffRank: number | null
+  cliffWarning: boolean
 }
 
 export interface RecommendationState {
@@ -40,6 +50,7 @@ export interface RecommendationState {
     explanation: RecommendationExplanation[]
   }>
   positionalNeeds: Record<Position, number>   // 0–1 urgency
-  scarcity: PositionalScarcity[]
+  waitAnalysis: WaitScenario[]
+  nextRoundBoard: Record<string, NextRoundPositionSummary>
   mayNotMakeItBack: FutureAvailability[]
 }
