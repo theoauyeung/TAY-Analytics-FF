@@ -98,13 +98,6 @@ export function PlayerDrawer({ playerId, onClose }: Props) {
 
   return (
     <>
-      {playerId && (
-        <div
-          className="fixed top-0 bottom-0 left-56 right-0 bg-black/30 z-40 transition-opacity"
-          onClick={onClose}
-        />
-      )}
-
       <aside
         className={clsx(
           'fixed right-0 top-0 h-screen w-96 bg-bg-secondary border-l border-border z-50 flex flex-col transition-transform duration-200',
