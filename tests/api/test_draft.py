@@ -15,7 +15,7 @@ _STATE = {
     'current_pick': 1,
     'total_picks': 180,
     'user_pick_position': 1,
-    'drafted_ids': [],
+    'pick_log': [],
     'user_roster': {'QB': [], 'RB': [], 'WR': [], 'TE': [], 'FLEX': []},
 }
 
@@ -49,6 +49,43 @@ def test_draft_recommend_has_board_state():
     assert bs['round'] == 1
 
 
+def test_draft_recommend_has_wait_analysis():
+    r = client.post('/draft/recommend', json=_STATE)
+    data = r.json()
+    assert 'wait_analysis' in data
+    assert isinstance(data['wait_analysis'], list)
+
+
+def test_draft_recommend_has_next_round_board():
+    r = client.post('/draft/recommend', json=_STATE)
+    data = r.json()
+    assert 'next_round_board' in data
+    assert isinstance(data['next_round_board'], dict)
+
+
+def test_draft_recommend_explanation_is_structured():
+    r = client.post('/draft/recommend', json=_STATE)
+    data = r.json()
+    explanation = data['top_pick']['explanation']
+    assert isinstance(explanation, list)
+    if explanation:
+        ex = explanation[0]
+        assert 'factor' in ex
+        assert 'detail' in ex
+        assert 'weight' in ex
+
+
+def test_draft_recommend_pick_log_accepted():
+    state = {
+        **_STATE,
+        'pick_log': [
+            {'gsis_id': 'nonexistent-1', 'team_number': 2, 'position': 'RB'},
+        ],
+    }
+    r = client.post('/draft/recommend', json=state)
+    assert r.status_code == 200
+
+
 def test_draft_simulate_returns_501():
     r = client.post('/draft/simulate', json={})
     assert r.status_code == 501
@@ -72,8 +109,7 @@ def test_draft_session_not_found():
 
 
 def test_draft_recommend_empty_pool_returns_422():
-    # All players drafted — pool exhausted
-    all_ids = ['P1', 'P2', 'P3', 'P4']
-    state = {**_STATE, 'drafted_ids': all_ids}
+    all_ids = [{'gsis_id': f'P{i}', 'team_number': 1, 'position': 'RB'} for i in range(1, 5)]
+    state = {**_STATE, 'pick_log': all_ids}
     r = client.post('/draft/recommend', json=state)
     assert r.status_code == 422
