@@ -1,7 +1,7 @@
 from __future__ import annotations
 from tay.draft.models import (
     LeagueSettings, DraftState, PlayerProjection,
-    Recommendation, RecommendationState,
+    Recommendation, RecommendationState, WaitScenario, NextRoundPositionSummary,
 )
 
 
@@ -56,13 +56,15 @@ def test_recommendation_state_has_top_pick():
     rec = Recommendation(
         player=pp, draft_score=75.0, roster_fit=1.0,
         positional_urgency=0.5, future_availability_pct=0.9,
-        explanation=['High VOR relative to ADP'],
+        explanation=[{'factor': 'VOR', 'detail': 'High VOR relative to ADP', 'weight': '1.0'}],
     )
     state = RecommendationState(
         top_pick=rec,
         alternatives=[],
         positional_needs=['RB', 'WR'],
         may_not_make_it_back=[],
+        wait_analysis=[],
+        next_round_board={},
         board_state={'current_pick': 1, 'round': 1, 'picks_until_next': 0},
     )
     assert state.top_pick.player.name == 'A'

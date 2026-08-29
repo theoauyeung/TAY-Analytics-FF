@@ -22,6 +22,7 @@ class DraftState:
     user_pick_position: int    # 1-indexed draft slot (1 = first pick overall in round 1)
     drafted_ids: list[str]     # gsis_ids already taken (all teams)
     user_roster: dict[str, list[str]]  # position -> list of gsis_ids
+    pick_log: list[tuple[str, int, str]] = field(default_factory=list)  # (gsis_id, team_num, position)
 
     @property
     def round(self) -> int:
@@ -36,7 +37,6 @@ class DraftState:
         """Picks remaining until user's next turn (0 = it's their turn now)."""
         teams = self.league_settings.teams
         pick_in_round = self.pick_in_round
-        # Snake draft: odd rounds pick ascending, even rounds descending
         current_round = self.round
         if current_round % 2 == 1:
             user_pick_in_round = self.user_pick_position
@@ -44,7 +44,6 @@ class DraftState:
             user_pick_in_round = teams - self.user_pick_position + 1
         if user_pick_in_round >= pick_in_round:
             return user_pick_in_round - pick_in_round
-        # User already picked this round; next pick is in the next round
         next_round = current_round + 1
         if next_round % 2 == 1:
             next_user_pick = self.user_pick_position
@@ -76,15 +75,36 @@ class Recommendation:
     player: PlayerProjection
     draft_score: float
     roster_fit: float
-    positional_urgency: float
-    future_availability_pct: float
-    explanation: list[str]
+    positional_urgency: float          # scarcity_premium value [0, 0.5]
+    future_availability_pct: float     # P(still available at next pick)
+    explanation: list[dict[str, str]]  # [{factor, detail, weight}, ...]
+
+
+@dataclass
+class WaitScenario:
+    position: str
+    best_now_name: str
+    best_now_vor: float
+    expected_vor_at_next_pick: float
+    vor_cost_of_waiting: float         # best_now_vor - expected_vor_at_next_pick
+    cliff_before_next_pick: bool
+    survival_probability: float        # P(best_now still available at next pick)
+
+
+@dataclass
+class NextRoundPositionSummary:
+    position: str
+    strong_options_remaining: int      # tier ≤ 3 players with survival_prob > 0.3
+    next_cliff_rank: int | None        # position rank of the next tier cliff
+    cliff_warning: bool                # cliff within top 4 position ranks
 
 
 @dataclass
 class RecommendationState:
     top_pick: Recommendation
     alternatives: list[Recommendation]
-    positional_needs: list[str]           # positions ordered by urgency
-    may_not_make_it_back: list[PlayerProjection]  # ADP suggests drafted before next turn
-    board_state: dict                     # {current_pick, round, picks_until_next}
+    positional_needs: list[str]                             # positions by urgency
+    may_not_make_it_back: list[PlayerProjection]
+    wait_analysis: list[WaitScenario]
+    next_round_board: dict[str, NextRoundPositionSummary]
+    board_state: dict                                        # {current_pick, round, picks_until_next}
