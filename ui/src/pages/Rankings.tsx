@@ -54,6 +54,7 @@ export default function Rankings() {
             visibleColumns={visibleColumns}
             onPlayerClick={setSelectedPlayerId}
             isLoading={isLoading}
+            selectedPlayerId={selectedPlayerId}
           />
         </div>
       </div>

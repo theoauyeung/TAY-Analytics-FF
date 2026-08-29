@@ -1,6 +1,5 @@
 import clsx from 'clsx'
-import type { Ranking, ColumnKey } from '../../types'
-import { PositionBadge, SignalBadge } from '../ui/Badge'
+import type { Ranking, ColumnKey, Position } from '../../types'
 import { StatCell } from '../ui/StatCell'
 import { ADP_VALUE_THRESHOLD, ADP_OVERVALUED_THRESHOLD } from '../../lib/thresholds'
 
@@ -9,6 +8,25 @@ interface Props {
   visibleColumns: ColumnKey[]
   onClick: () => void
   isDrafted?: boolean
+  isSelected?: boolean
+}
+
+const POS_COLORS: Record<Position, string> = {
+  QB:  'text-pos-qb',
+  RB:  'text-pos-rb',
+  WR:  'text-pos-wr',
+  TE:  'text-pos-te',
+  K:   'text-pos-k',
+  DST: 'text-pos-dst',
+}
+
+const POS_RING: Record<Position, string> = {
+  QB:  'ring-pos-qb/40',
+  RB:  'ring-pos-rb/40',
+  WR:  'ring-pos-wr/40',
+  TE:  'ring-pos-te/40',
+  K:   'ring-pos-k/40',
+  DST: 'ring-pos-dst/40',
 }
 
 function fmt(v: number | null, decimals = 1): string {
@@ -21,33 +39,58 @@ function fmtPct(v: number | null): string {
   return `${(v * 100).toFixed(1)}%`
 }
 
-export function PlayerRow({ ranking, visibleColumns, onClick, isDrafted = false }: Props) {
-  const { player, vor, adpDelta } = ranking
+function ModelSignal({ adpDelta }: { adpDelta: number }) {
+  if (adpDelta <= ADP_VALUE_THRESHOLD) {
+    return (
+      <span className="text-[10px] font-condensed font-semibold tracking-wide text-accent tabular-nums">
+        ↑{Math.abs(adpDelta)}
+      </span>
+    )
+  }
+  if (adpDelta >= ADP_OVERVALUED_THRESHOLD) {
+    return (
+      <span className="text-[10px] font-condensed font-semibold tracking-wide text-red-400 tabular-nums">
+        ↓{adpDelta}
+      </span>
+    )
+  }
+  return null
+}
 
-  const isUndervalued = adpDelta <= ADP_VALUE_THRESHOLD
-  const isOvervalued  = adpDelta >= ADP_OVERVALUED_THRESHOLD
-  const hasInjury     = player.injuryStatus !== null && player.injuryStatus !== 'healthy'
+export function PlayerRow({ ranking, visibleColumns, onClick, isDrafted = false, isSelected = false }: Props) {
+  const { player, vor, adpDelta } = ranking
+  const hasInjury = player.injuryStatus !== null && player.injuryStatus !== 'healthy'
+
+  const rowBase = clsx(
+    'border-b border-border/20 cursor-pointer transition-colors group relative',
+    isDrafted && 'opacity-40 pointer-events-none',
+    isSelected
+      ? 'bg-accent-muted/30'
+      : 'hover:bg-bg-elevated/50'
+  )
 
   return (
-    <tr
-      onClick={onClick}
-      className={clsx(
-        'border-b border-border/30 cursor-pointer transition-colors group',
-        isDrafted
-          ? 'opacity-40 pointer-events-none'
-          : 'hover:bg-bg-elevated/60'
-      )}
-    >
+    <tr onClick={onClick} className={rowBase}>
+
       {/* Rank */}
       <td className="py-3 px-4 text-center w-14">
-        <span className="text-base font-bold font-mono text-text-muted">{ranking.rank}</span>
+        <span className="text-sm font-tabular font-medium text-text-muted">{ranking.rank}</span>
       </td>
 
-      {/* Player name — sticky, most prominent */}
-      <td className="py-3 px-3 min-w-[200px] sticky left-0 bg-bg-primary group-hover:bg-bg-elevated/60 transition-colors">
+      {/* Player — sticky, dominant */}
+      <td className={clsx(
+        'py-2.5 px-3 min-w-[200px] sticky left-0 transition-colors',
+        'border-l-2',
+        isSelected
+          ? 'border-accent bg-accent-muted/30'
+          : 'border-transparent group-hover:border-accent/40 bg-bg-primary group-hover:bg-bg-elevated/50'
+      )}>
         <div className="flex items-center gap-3">
-          {/* Headshot */}
-          <div className="w-9 h-9 rounded-full overflow-hidden bg-bg-elevated flex-shrink-0">
+          {/* Headshot with position-colored ring */}
+          <div className={clsx(
+            'w-9 h-9 rounded-full overflow-hidden bg-bg-elevated flex-shrink-0 ring-1',
+            POS_RING[player.position]
+          )}>
             {player.imageUrl ? (
               <img
                 src={player.imageUrl}
@@ -56,21 +99,35 @@ export function PlayerRow({ ranking, visibleColumns, onClick, isDrafted = false 
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-xs text-text-muted font-bold">
+              <div className="w-full h-full flex items-center justify-center text-xs font-bold text-text-muted">
                 {player.name.charAt(0)}
               </div>
             )}
           </div>
-          <div>
-            <div className="font-semibold text-sm text-text-primary leading-tight flex items-center gap-2">
-              {player.name}
-              {isUndervalued && <SignalBadge signal="value" label="▲ Value" />}
-              {isOvervalued && <SignalBadge signal="avoid" label="▼ Fade" />}
-              {hasInjury && <SignalBadge signal="injury" label={player.injuryStatus ?? ''} />}
+
+          <div className="min-w-0">
+            {/* Player name + signal — dominant */}
+            <div className="flex items-baseline gap-2 leading-tight">
+              <span className={clsx(
+                'font-semibold text-sm leading-tight transition-colors truncate',
+                isSelected ? 'text-accent' : 'text-text-primary group-hover:text-white'
+              )}>
+                {player.name}
+              </span>
+              <ModelSignal adpDelta={adpDelta} />
+              {hasInjury && (
+                <span className="text-[9px] font-condensed font-semibold tracking-wide text-yellow-400 uppercase shrink-0">
+                  {player.injuryStatus}
+                </span>
+              )}
             </div>
+            {/* Position + team — compact metadata */}
             <div className="flex items-center gap-1.5 mt-0.5">
-              <PositionBadge position={player.position} />
-              <span className="text-xs text-text-muted">{player.team}</span>
+              <span className={clsx('text-[10px] font-condensed font-semibold tracking-wide', POS_COLORS[player.position])}>
+                {player.position}
+              </span>
+              <span className="text-[10px] text-text-muted">·</span>
+              <span className="text-[10px] text-text-muted font-medium">{player.team}</span>
             </div>
           </div>
         </div>
@@ -79,13 +136,15 @@ export function PlayerRow({ ranking, visibleColumns, onClick, isDrafted = false 
       {/* Position */}
       {visibleColumns.includes('position') && (
         <td className="py-2.5 px-3 text-center w-14">
-          <PositionBadge position={player.position} />
+          <span className={clsx('text-xs font-condensed font-semibold tracking-wide', POS_COLORS[player.position])}>
+            {player.position}
+          </span>
         </td>
       )}
 
       {/* Team */}
       {visibleColumns.includes('team') && (
-        <td className="py-2.5 px-2 text-center text-xs font-mono text-text-secondary w-12">
+        <td className="py-2.5 px-2 text-center text-xs font-tabular text-text-secondary w-12">
           {player.team}
         </td>
       )}
@@ -155,7 +214,7 @@ export function PlayerRow({ ranking, visibleColumns, onClick, isDrafted = false 
       {/* Model Rank */}
       {visibleColumns.includes('modelRank') && (
         <td className="py-2.5 px-3 text-center w-16">
-          <span className="text-sm text-text-secondary font-mono">{ranking.modelRank}</span>
+          <span className="text-sm font-tabular text-text-secondary">{ranking.modelRank}</span>
         </td>
       )}
 
@@ -166,36 +225,39 @@ export function PlayerRow({ ranking, visibleColumns, onClick, isDrafted = false 
         </td>
       )}
 
-      {/* Optional columns */}
+      {/* Optional stat columns */}
       {visibleColumns.includes('floor') && (
-        <td className="py-2.5 px-3 text-right w-16 text-sm text-text-secondary">{fmt(ranking.floor)}</td>
+        <td className="py-2.5 px-3 text-right w-16 text-sm font-tabular text-text-secondary">{fmt(ranking.floor)}</td>
       )}
       {visibleColumns.includes('ceiling') && (
-        <td className="py-2.5 px-3 text-right w-16 text-sm text-text-secondary">{fmt(ranking.ceiling)}</td>
+        <td className="py-2.5 px-3 text-right w-16 text-sm font-tabular text-text-secondary">{fmt(ranking.ceiling)}</td>
       )}
       {visibleColumns.includes('targetShare') && (
-        <td className="py-2.5 px-3 text-right w-16 text-sm text-text-secondary">{fmtPct(ranking.targetShare)}</td>
+        <td className="py-2.5 px-3 text-right w-16 text-sm font-tabular text-text-secondary">{fmtPct(ranking.targetShare)}</td>
       )}
       {visibleColumns.includes('rushShare') && (
-        <td className="py-2.5 px-3 text-right w-16 text-sm text-text-secondary">{fmtPct(ranking.rushShare)}</td>
+        <td className="py-2.5 px-3 text-right w-16 text-sm font-tabular text-text-secondary">{fmtPct(ranking.rushShare)}</td>
       )}
       {visibleColumns.includes('snapPct') && (
-        <td className="py-2.5 px-3 text-right w-16 text-sm text-text-secondary">{fmtPct(ranking.snapPct)}</td>
+        <td className="py-2.5 px-3 text-right w-16 text-sm font-tabular text-text-secondary">{fmtPct(ranking.snapPct)}</td>
       )}
       {visibleColumns.includes('routePct') && (
-        <td className="py-2.5 px-3 text-right w-16 text-sm text-text-secondary">{fmtPct(ranking.routePct)}</td>
+        <td className="py-2.5 px-3 text-right w-16 text-sm font-tabular text-text-secondary">{fmtPct(ranking.routePct)}</td>
       )}
       {visibleColumns.includes('redZoneUsage') && (
-        <td className="py-2.5 px-3 text-right w-16 text-sm text-text-secondary">{fmtPct(ranking.redZoneUsage)}</td>
+        <td className="py-2.5 px-3 text-right w-16 text-sm font-tabular text-text-secondary">{fmtPct(ranking.redZoneUsage)}</td>
       )}
       {visibleColumns.includes('tdProjection') && (
-        <td className="py-2.5 px-3 text-right w-16 text-sm text-text-secondary">{fmt(ranking.tdProjection, 1)}</td>
+        <td className="py-2.5 px-3 text-right w-16 text-sm font-tabular text-text-secondary">{fmt(ranking.tdProjection, 1)}</td>
       )}
       {visibleColumns.includes('gamesPlayed') && (
-        <td className="py-2.5 px-3 text-right w-16 text-sm text-text-secondary">{fmt(ranking.gamesPlayed, 1)}</td>
+        <td className="py-2.5 px-3 text-right w-16 text-sm font-tabular text-text-secondary">{fmt(ranking.gamesPlayed, 1)}</td>
       )}
       {visibleColumns.includes('adpDelta') && (
-        <td className={clsx('py-2.5 px-3 text-right w-16 text-sm font-medium', adpDelta <= ADP_VALUE_THRESHOLD ? 'text-green-400' : adpDelta >= ADP_OVERVALUED_THRESHOLD ? 'text-red-400' : 'text-text-secondary')}>
+        <td className={clsx(
+          'py-2.5 px-3 text-right w-16 text-sm font-tabular font-medium',
+          adpDelta <= ADP_VALUE_THRESHOLD ? 'text-accent' : adpDelta >= ADP_OVERVALUED_THRESHOLD ? 'text-red-400' : 'text-text-secondary'
+        )}>
           {adpDelta >= 0 ? '+' : ''}{adpDelta}
         </td>
       )}
