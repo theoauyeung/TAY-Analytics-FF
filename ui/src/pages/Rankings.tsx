@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { RankingsControls } from '../components/rankings/RankingsControls'
 import { ColumnToggle } from '../components/rankings/ColumnToggle'
 import { RankingsTable } from '../components/rankings/RankingsTable'
-import { PlayerDrawer } from '../components/rankings/PlayerDrawer'
 import { useRankings } from '../hooks/useRankings'
 import type { RankingFilters, ColumnKey } from '../types'
 import { CORE_COLUMNS } from '../types'
@@ -24,7 +23,6 @@ const DEFAULT_VISIBLE: ColumnKey[] = [
 export default function Rankings() {
   const [filters, setFilters] = useState<RankingFilters>(DEFAULT_FILTERS)
   const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(DEFAULT_VISIBLE)
-  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null)
 
   const { rankings, isLoading } = useRankings(filters)
 
@@ -46,24 +44,16 @@ export default function Rankings() {
         <RankingsControls filters={filters} onChange={updateFilters} />
       </div>
 
-      {/* Table — takes remaining height with internal scroll */}
+      {/* Table */}
       <div className="flex-1 overflow-hidden px-0 py-0">
         <div className="h-full overflow-auto">
           <RankingsTable
             rankings={rankings}
             visibleColumns={visibleColumns}
-            onPlayerClick={setSelectedPlayerId}
             isLoading={isLoading}
-            selectedPlayerId={selectedPlayerId}
           />
         </div>
       </div>
-
-      {/* Player drawer */}
-      <PlayerDrawer
-        playerId={selectedPlayerId}
-        onClose={() => setSelectedPlayerId(null)}
-      />
     </div>
   )
 }

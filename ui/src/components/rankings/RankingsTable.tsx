@@ -6,9 +6,7 @@ import { Spinner } from '../ui/Spinner'
 interface Props {
   rankings: Ranking[]
   visibleColumns: ColumnKey[]
-  onPlayerClick: (id: string) => void
   isLoading?: boolean
-  selectedPlayerId?: string | null
 }
 
 const COLUMN_GROUPS: { label: string; cols: ColumnKey[] }[] = [
@@ -21,7 +19,7 @@ const COLUMN_GROUPS: { label: string; cols: ColumnKey[] }[] = [
 
 const GROUPED_COLS = new Set(COLUMN_GROUPS.flatMap(g => g.cols))
 
-export function RankingsTable({ rankings, visibleColumns, onPlayerClick, isLoading, selectedPlayerId }: Props) {
+export function RankingsTable({ rankings, visibleColumns, isLoading }: Props) {
   const cols = visibleColumns.filter(c => c !== 'rank' && c !== 'player' && c !== 'tier' && c !== 'position' && c !== 'team')
 
   const activeGroups = COLUMN_GROUPS
@@ -83,8 +81,6 @@ export function RankingsTable({ rankings, visibleColumns, onPlayerClick, isLoadi
               key={ranking.player.id}
               ranking={ranking}
               visibleColumns={cols}
-              onClick={() => onPlayerClick(ranking.player.id)}
-              isSelected={selectedPlayerId === ranking.player.id}
             />
           ))}
         </tbody>
