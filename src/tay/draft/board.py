@@ -2,6 +2,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from tay.draft.models import PlayerProjection
+from tay.draft.scoring import future_availability
 
 
 @dataclass
@@ -86,15 +87,36 @@ def build_board_analysis(
         for pk in range(current_pick, user_pick_numbers[0])
     ] if user_pick_numbers else []
 
-    # 5. Build per-position state (survival probs filled in Task 3)
+    # 5. Build per-position state with survival probabilities
     per_position: dict[str, PositionBoardState] = {}
     for pos, pos_players in by_position.items():
+        # Hungry teams: teams picking before user at horizon 0 with ≤ 1 player at this position
+        hungry = sum(
+            1 for t in teams_before_h0
+            if opponent_rosters.get(t, {}).get(pos, 0) <= 1
+        )
+        run_active = pos in run_positions
+
+        survival_probs: dict[str, list[float]] = {}
+        for p in pos_players:
+            probs: list[float] = []
+            for h, horizon_pick in enumerate(user_pick_numbers[:3]):
+                picks_until = max(0, horizon_pick - current_pick)
+                base = future_availability(p, current_pick, picks_until)
+                if h == 0:
+                    demand = hungry * 0.05
+                    if run_active:
+                        demand += len(teams_before_h0) * 0.03
+                    base = max(0.0, min(1.0, base - demand))
+                probs.append(base)
+            survival_probs[p.gsis_id] = probs
+
         per_position[pos] = PositionBoardState(
             position=pos,
             available=pos_players,
             tier_cliffs=_find_tier_cliffs(pos_players),
-            survival_probs={},           # populated in Task 3
-            run_in_progress=(pos in run_positions),
+            survival_probs=survival_probs,
+            run_in_progress=run_active,
         )
 
     return BoardAnalysis(

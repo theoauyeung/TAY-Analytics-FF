@@ -144,3 +144,77 @@ def test_available_list_sorted_by_vor_desc():
     )
     ids = [p.gsis_id for p in board.per_position['RB'].available]
     assert ids == ['R1', 'R2', 'R3']
+
+
+# --- Survival probabilities ---
+
+def test_survival_prob_has_three_horizons():
+    players = [_player('R1', 'RB', 50.0, 10.0, 1)]
+    board = build_board_analysis(
+        players=players, pick_log=[], current_pick=1,
+        teams=12, user_pick_numbers=[6, 19, 30],
+    )
+    probs = board.per_position['RB'].survival_probs['R1']
+    assert len(probs) == 3
+    assert all(0.0 <= p <= 1.0 for p in probs)
+
+
+def test_survival_prob_decreases_with_horizon():
+    # Player with ADP=10 — further horizons are worse (more picks have happened)
+    players = [_player('R1', 'RB', 50.0, 10.0, 1)]
+    board = build_board_analysis(
+        players=players, pick_log=[], current_pick=1,
+        teams=12, user_pick_numbers=[6, 19, 30],
+    )
+    probs = board.per_position['RB'].survival_probs['R1']
+    # Each horizon is further out → lower survival
+    assert probs[0] >= probs[1] >= probs[2]
+
+
+def test_hungry_opponents_reduce_survival_at_horizon0():
+    # Compare: 5 teams picking before user with 0 RBs (hungry) vs user picks immediately (no teams before).
+    # More hungry opponents → lower survival probability.
+    players = [_player('R1', 'RB', 50.0, 20.0, 1)]
+
+    # High demand: 5 teams pick before user, all with 0 RBs
+    board_high_demand = build_board_analysis(
+        players=players,
+        pick_log=[],
+        current_pick=1,
+        teams=12,
+        user_pick_numbers=[6, 19, 30],
+    )
+
+    # Low demand: user picks immediately next, no teams between current_pick and user pick
+    board_low_demand = build_board_analysis(
+        players=players,
+        pick_log=[],
+        current_pick=6,
+        teams=12,
+        user_pick_numbers=[6, 19, 30],
+    )
+
+    prob_high = board_high_demand.per_position['RB'].survival_probs['R1'][0]
+    prob_low = board_low_demand.per_position['RB'].survival_probs['R1'][0]
+    assert prob_low >= prob_high  # fewer hungry teams → higher survival
+
+
+def test_run_in_progress_reduces_survival_at_horizon0():
+    players = [_player('R1', 'RB', 50.0, 20.0, 1)]
+    # No run
+    board_no_run = build_board_analysis(
+        players=players, pick_log=[], current_pick=1,
+        teams=12, user_pick_numbers=[6, 19, 30],
+    )
+    # RB run: last 5 picks are RB
+    run_picks = [('X', i + 1, 'RB') for i in range(5)]
+    board_run = build_board_analysis(
+        players=players,
+        pick_log=run_picks,
+        current_pick=6,
+        teams=12,
+        user_pick_numbers=[12, 25, 36],
+    )
+    p_no_run = board_no_run.per_position['RB'].survival_probs['R1'][0]
+    p_run = board_run.per_position['RB'].survival_probs['R1'][0]
+    assert p_run <= p_no_run  # run increases demand → lower survival
