@@ -100,7 +100,7 @@ export function PlayerDrawer({ playerId, onClose }: Props) {
     <>
       {playerId && (
         <div
-          className="fixed inset-0 bg-black/40 z-40 transition-opacity"
+          className="fixed top-0 bottom-0 left-56 right-0 bg-black/30 z-40 transition-opacity"
           onClick={onClose}
         />
       )}
