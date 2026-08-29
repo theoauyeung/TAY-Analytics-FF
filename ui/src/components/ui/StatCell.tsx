@@ -8,9 +8,10 @@ interface StatCellProps {
   className?: string
   positive?: boolean   // green tint
   negative?: boolean   // red tint
+  hero?: boolean       // larger bold treatment for hero metrics
 }
 
-export function StatCell({ value, label, detail, className, positive, negative }: StatCellProps) {
+export function StatCell({ value, label, detail, className, positive, negative, hero }: StatCellProps) {
   const [open, setOpen] = useState(false)
 
   if (value === null) return <span className="text-text-muted">—</span>
@@ -20,7 +21,8 @@ export function StatCell({ value, label, detail, className, positive, negative }
       <button
         onClick={() => detail && setOpen((v) => !v)}
         className={clsx(
-          'tabular-nums text-sm transition-colors',
+          'tabular-nums transition-colors',
+          hero ? 'text-base font-bold' : 'text-sm',
           detail && 'underline decoration-dotted underline-offset-2 cursor-pointer',
           positive && 'text-green-400',
           negative && 'text-red-400',

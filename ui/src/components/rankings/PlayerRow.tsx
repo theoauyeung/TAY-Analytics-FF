@@ -61,13 +61,13 @@ export function PlayerRow({ ranking, visibleColumns, isDrafted = false }: Props)
 
   return (
     <tr className={clsx(
-      'border-b border-border/20 hover:bg-bg-elevated/40 transition-colors group',
+      'border-b border-border/20 hover:bg-bg-elevated/40 transition-colors group even:bg-white/[0.018]',
       isDrafted && 'opacity-40 pointer-events-none'
     )}>
 
       {/* Rank */}
       <td className="py-3 px-4 text-center w-14">
-        <span className="text-sm tabular-nums font-medium text-text-muted">{ranking.rank}</span>
+        <span className="text-base tabular-nums font-bold text-text-secondary">{ranking.rank}</span>
       </td>
 
       {/* Player — sticky */}
@@ -143,7 +143,6 @@ export function PlayerRow({ ranking, visibleColumns, isDrafted = false }: Props)
         <td className="py-2.5 px-3 text-right w-20">
           <StatCell
             value={fmt(ranking.projection)}
-            positive={ranking.projection >= 250}
             detail={
               <div className="space-y-1">
                 <div>Floor: {fmt(ranking.floor)}</div>
@@ -160,7 +159,8 @@ export function PlayerRow({ ranking, visibleColumns, isDrafted = false }: Props)
         <td className="py-2.5 px-3 text-right w-20">
           <StatCell
             value={vor >= 0 ? `+${fmt(vor)}` : fmt(vor)}
-            positive={vor >= 20}
+            hero
+            positive={vor >= 60}
             negative={vor < 0}
             detail={
               <div className="space-y-1">

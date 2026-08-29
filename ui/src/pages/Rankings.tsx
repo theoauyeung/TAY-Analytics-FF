@@ -32,12 +32,16 @@ export default function Rankings() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      {/* Page header */}
-      <div className="border-b border-border px-6 pt-5 pb-3 bg-bg-secondary flex-shrink-0">
-        <div className="flex items-start justify-between mb-4">
+      {/* Editorial page header */}
+      <div className="border-b-2 border-border px-6 pt-5 pb-0 bg-bg-secondary flex-shrink-0">
+        <div className="flex items-end justify-between mb-3">
           <div>
-            <h1 className="text-2xl font-bold text-text-primary">Rankings</h1>
-            <p className="text-xs text-text-muted mt-0.5 font-condensed tracking-wide">PPR · 2026 Projections</p>
+            <h1 className="text-4xl font-condensed font-bold tracking-tight text-text-primary uppercase leading-none">
+              Rankings
+            </h1>
+            <p className="text-[11px] font-condensed tracking-[0.12em] text-text-muted uppercase mt-1.5">
+              PPR · 2026 Season · TAY Model
+            </p>
           </div>
           <ColumnToggle visibleColumns={visibleColumns} onChange={setVisibleColumns} />
         </div>
@@ -45,7 +49,7 @@ export default function Rankings() {
       </div>
 
       {/* Table */}
-      <div className="flex-1 overflow-hidden px-0 py-0">
+      <div className="flex-1 overflow-hidden">
         <div className="h-full overflow-auto">
           <RankingsTable
             rankings={rankings}
