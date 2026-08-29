@@ -26,3 +26,78 @@ class PositionBoardState:
 class BoardAnalysis:
     per_position: dict[str, PositionBoardState]
     opponent_rosters: dict[int, dict[str, int]]   # team_num → {position: count}
+
+
+def _picking_team(overall_pick: int, teams: int) -> int:
+    """Team number (1-indexed) picking at overall_pick in a snake draft."""
+    pick_in_round = ((overall_pick - 1) % teams) + 1
+    round_num = (overall_pick - 1) // teams + 1
+    return pick_in_round if round_num % 2 == 1 else teams - pick_in_round + 1
+
+
+def _find_tier_cliffs(players: list[PlayerProjection]) -> list[TierCliff]:
+    """Detect where tier number increases in a VOR-sorted player list."""
+    cliffs = []
+    for i in range(len(players) - 1):
+        curr, nxt = players[i], players[i + 1]
+        if curr.tier is None or nxt.tier is None:
+            continue
+        if nxt.tier > curr.tier:
+            cliffs.append(TierCliff(
+                before_player=curr,
+                after_player=nxt,
+                vor_drop=curr.vor - nxt.vor,
+                tier_jump=nxt.tier - curr.tier,
+                rank_at_cliff=i + 1,   # 1-indexed
+            ))
+    return cliffs
+
+
+def build_board_analysis(
+    players: list[PlayerProjection],
+    pick_log: list[tuple[str, int, str]],   # (gsis_id, team_number, position)
+    current_pick: int,
+    teams: int,
+    user_pick_numbers: list[int],           # next 3 user pick numbers, len == 3
+) -> BoardAnalysis:
+    # 1. Opponent rosters
+    opponent_rosters: dict[int, dict[str, int]] = {}
+    for _gsis_id, team_num, position in pick_log:
+        team_roster = opponent_rosters.setdefault(team_num, {})
+        team_roster[position] = team_roster.get(position, 0) + 1
+
+    # 2. Run detection — last 5 picks
+    last5 = pick_log[-5:]
+    run_positions: set[str] = set()
+    for pos in {entry[2] for entry in last5}:
+        if sum(1 for e in last5 if e[2] == pos) >= 3:
+            run_positions.add(pos)
+
+    # 3. Group available players by position, sort VOR desc
+    by_position: dict[str, list[PlayerProjection]] = {}
+    for p in players:
+        by_position.setdefault(p.position, []).append(p)
+    for pos_players in by_position.values():
+        pos_players.sort(key=lambda p: p.vor, reverse=True)
+
+    # 4. Teams picking before user at horizon 0
+    teams_before_h0 = [
+        _picking_team(pk, teams)
+        for pk in range(current_pick, user_pick_numbers[0])
+    ] if user_pick_numbers else []
+
+    # 5. Build per-position state (survival probs filled in Task 3)
+    per_position: dict[str, PositionBoardState] = {}
+    for pos, pos_players in by_position.items():
+        per_position[pos] = PositionBoardState(
+            position=pos,
+            available=pos_players,
+            tier_cliffs=_find_tier_cliffs(pos_players),
+            survival_probs={},           # populated in Task 3
+            run_in_progress=(pos in run_positions),
+        )
+
+    return BoardAnalysis(
+        per_position=per_position,
+        opponent_rosters=opponent_rosters,
+    )
