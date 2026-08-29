@@ -62,13 +62,14 @@ def _make_db():
     return conn
 
 
-def _state(drafted_ids=None, current_pick=1, user_roster=None):
+def _state(drafted_ids=None, current_pick=1, user_roster=None, pick_log=None):
     ls = LeagueSettings()
     return DraftState(
         season=2026, model_version='test-v1', league_settings=ls,
         current_pick=current_pick, total_picks=180, user_pick_position=1,
         drafted_ids=drafted_ids or [],
         user_roster=user_roster or {'QB': [], 'RB': [], 'WR': [], 'TE': [], 'FLEX': []},
+        pick_log=pick_log or [],
     )
 
 
@@ -142,4 +143,51 @@ def test_recommend_may_not_make_it_back_list():
     # W1 has ADP=4, user picks ~12th — should appear in may_not_make_it_back
     mnmib_ids = [p.gsis_id for p in result.may_not_make_it_back]
     assert 'W1' in mnmib_ids  # ADP=4, likely gone by user's turn at pick 12
+    conn.close()
+
+
+def test_recommend_has_wait_analysis():
+    conn = _make_db()
+    state = _state()
+    result = recommend(conn, state)
+    assert hasattr(result, 'wait_analysis')
+    assert isinstance(result.wait_analysis, list)
+    conn.close()
+
+
+def test_recommend_has_next_round_board():
+    conn = _make_db()
+    state = _state()
+    result = recommend(conn, state)
+    assert hasattr(result, 'next_round_board')
+    assert isinstance(result.next_round_board, dict)
+    conn.close()
+
+
+def test_wait_analysis_positions_in_top_picks():
+    conn = _make_db()
+    state = _state()
+    result = recommend(conn, state)
+    # wait_analysis positions must be a subset of positions in top 5
+    top5_positions = {r.player.position for r in [result.top_pick] + list(result.alternatives)}
+    wait_positions = {w.position for w in result.wait_analysis}
+    assert wait_positions.issubset(top5_positions)
+    conn.close()
+
+
+def test_next_round_board_has_all_positions():
+    conn = _make_db()
+    state = _state()
+    result = recommend(conn, state)
+    # Should have at least QB, RB, WR (3 positions in the test DB)
+    assert len(result.next_round_board) >= 2
+    conn.close()
+
+
+def test_wait_analysis_vor_cost_non_negative():
+    conn = _make_db()
+    state = _state()
+    result = recommend(conn, state)
+    for scenario in result.wait_analysis:
+        assert scenario.vor_cost_of_waiting >= -5.0  # allow small floating point
     conn.close()

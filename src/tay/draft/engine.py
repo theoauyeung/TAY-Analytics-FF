@@ -2,10 +2,12 @@
 from __future__ import annotations
 import duckdb
 
-from tay.draft.models import DraftState, PlayerProjection, RecommendationState
-from tay.draft.scoring import positional_urgency, score_player
-
-REPLACEMENT_SPOTS: dict[str, int] = {'QB': 12, 'RB': 30, 'WR': 30, 'TE': 12}
+from tay.draft.board import build_board_analysis
+from tay.draft.models import (
+    DraftState, PlayerProjection, RecommendationState,
+    WaitScenario, NextRoundPositionSummary,
+)
+from tay.draft.scoring import score_player
 
 _LOAD_SQL = """
     SELECT pr.gsis_id, p.name, p.position, p.team,
@@ -50,39 +52,123 @@ def load_projections(
     ]
 
 
+def _compute_next_user_picks(state: DraftState, n: int = 3) -> list[int]:
+    """Next n overall pick numbers for the user in a snake draft."""
+    teams = state.league_settings.teams
+    picks: list[int] = []
+    pick = state.current_pick
+    while len(picks) < n and pick <= state.total_picks:
+        round_num = (pick - 1) // teams + 1
+        pick_in_round = ((pick - 1) % teams) + 1
+        user_pick_in_round = (
+            state.user_pick_position if round_num % 2 == 1
+            else teams - state.user_pick_position + 1
+        )
+        if pick_in_round == user_pick_in_round:
+            picks.append(pick)
+        pick += 1
+    while len(picks) < n:
+        picks.append(state.total_picks + 1)
+    return picks
+
+
+def _build_wait_analysis(board, scored: list) -> list[WaitScenario]:
+    """One WaitScenario per unique position in the top 5 scored players."""
+    top5_positions = list(dict.fromkeys(r.player.position for r in scored[:5]))
+    scenarios: list[WaitScenario] = []
+
+    for pos in top5_positions:
+        pos_board = board.per_position.get(pos)
+        if not pos_board or not pos_board.available:
+            continue
+        best = pos_board.available[0]
+        survivals = [
+            pos_board.survival_probs.get(p.gsis_id, [0.5])[0]
+            for p in pos_board.available
+        ]
+        total_survival = sum(survivals)
+        if total_survival > 0:
+            expected_vor = sum(
+                p.vor * s for p, s in zip(pos_board.available, survivals)
+            ) / total_survival
+        else:
+            expected_vor = 0.0
+
+        cliff_ids = {cliff.before_player.gsis_id for cliff in pos_board.tier_cliffs}
+        survival_prob = pos_board.survival_probs.get(best.gsis_id, [0.5])[0]
+
+        scenarios.append(WaitScenario(
+            position=pos,
+            best_now_name=best.name,
+            best_now_vor=round(best.vor, 1),
+            expected_vor_at_next_pick=round(expected_vor, 1),
+            vor_cost_of_waiting=round(best.vor - expected_vor, 1),
+            cliff_before_next_pick=(best.gsis_id in cliff_ids),
+            survival_probability=round(survival_prob, 3),
+        ))
+    return scenarios
+
+
+def _build_next_round_board(board) -> dict[str, NextRoundPositionSummary]:
+    """Summary of what each position's board will look like at the user's next pick."""
+    result: dict[str, NextRoundPositionSummary] = {}
+    for pos, pos_board in board.per_position.items():
+        strong = sum(
+            1 for p in pos_board.available
+            if (p.tier or 5) <= 3
+            and pos_board.survival_probs.get(p.gsis_id, [0.5])[0] > 0.3
+        )
+        next_cliff = pos_board.tier_cliffs[0] if pos_board.tier_cliffs else None
+        result[pos] = NextRoundPositionSummary(
+            position=pos,
+            strong_options_remaining=strong,
+            next_cliff_rank=next_cliff.rank_at_cliff if next_cliff else None,
+            cliff_warning=(next_cliff is not None and next_cliff.rank_at_cliff <= 4),
+        )
+    return result
+
+
 def recommend(
     conn: duckdb.DuckDBPyConnection,
     state: DraftState,
 ) -> RecommendationState:
-    players = load_projections(
-        conn, state.season, state.model_version, state.drafted_ids
+    players = load_projections(conn, state.season, state.model_version, state.drafted_ids)
+
+    user_pick_numbers = _compute_next_user_picks(state, n=3)
+
+    board = build_board_analysis(
+        players=players,
+        pick_log=state.pick_log,
+        current_pick=state.current_pick,
+        teams=state.league_settings.teams,
+        user_pick_numbers=user_pick_numbers,
     )
 
-    available_by_position: dict[str, int] = {}
-    for p in players:
-        available_by_position[p.position] = available_by_position.get(p.position, 0) + 1
-
-    scored = [
-        score_player(p, state, available_by_position, REPLACEMENT_SPOTS)
-        for p in players
-    ]
+    scored = [score_player(p, state, board) for p in players]
     scored.sort(key=lambda r: r.draft_score, reverse=True)
 
     if not scored:
         raise ValueError(
-            f"No available players for season={state.season} model={state.model_version}"
+            f'No available players for season={state.season} model={state.model_version}'
         )
 
     top_pick = scored[0]
     alternatives = scored[1:4]
 
+    wait_analysis = _build_wait_analysis(board, scored)
+    next_round_board = _build_next_round_board(board)
+
+    # Sort positions by average scarcity premium (positional_urgency field).
+    # Include exhausted positions (not in board) at max urgency (1.0).
+    all_positions = list(board.per_position.keys()) + [
+        pos for pos in ('QB', 'RB', 'WR', 'TE') if pos not in board.per_position
+    ]
     positional_needs = sorted(
-        REPLACEMENT_SPOTS.keys(),
-        key=lambda pos: positional_urgency(
-            pos,
-            available_by_position.get(pos, 0),  # 0 if exhausted → urgency = 1.0
-            REPLACEMENT_SPOTS,
-        ),
+        all_positions,
+        key=lambda pos: (
+            sum(r.positional_urgency for r in scored if r.player.position == pos)
+            / max(1, sum(1 for r in scored if r.player.position == pos))
+        ) if any(r.player.position == pos for r in scored) else 1.0,
         reverse=True,
     )
 
@@ -92,16 +178,16 @@ def recommend(
         if r.future_availability_pct < 0.35 and r.player.gsis_id != top_id
     ]
 
-    board_state = {
-        'current_pick': state.current_pick,
-        'round': state.round,
-        'picks_until_next': state.picks_until_next,
-    }
-
     return RecommendationState(
         top_pick=top_pick,
         alternatives=alternatives,
         positional_needs=positional_needs,
         may_not_make_it_back=may_not_make_it_back,
-        board_state=board_state,
+        wait_analysis=wait_analysis,
+        next_round_board=next_round_board,
+        board_state={
+            'current_pick': state.current_pick,
+            'round': state.round,
+            'picks_until_next': state.picks_until_next,
+        },
     )
