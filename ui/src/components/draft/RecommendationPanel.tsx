@@ -9,6 +9,8 @@ import { PositionBadge } from '../ui/Badge'
 import { AlternativeCard } from './AlternativeCard'
 import { ScarcityBar } from './ScarcityBar'
 import { MayNotMakeItBack } from './MayNotMakeItBack'
+import { WaitAnalysisPanel } from './WaitAnalysisPanel'
+import { NextRoundBoardPanel } from './NextRoundBoardPanel'
 
 export function RecommendationPanel() {
   const { state, draftPlayer } = useDraftState()
@@ -168,6 +170,12 @@ export function RecommendationPanel() {
         </div>
       )}
 
+      {/* What Happens If I Wait? */}
+      <WaitAnalysisPanel scenarios={reco.waitAnalysis} />
+
+      {/* Likely Available Next Pick */}
+      <NextRoundBoardPanel board={reco.nextRoundBoard} />
+
       {/* Alternatives */}
       {reco.alternatives.length > 0 && (
         <div>
@@ -188,9 +196,9 @@ export function RecommendationPanel() {
       )}
 
       {/* Scarcity Bar */}
-      {reco.scarcity.length > 0 && (
+      {reco.waitAnalysis.length > 0 && (
         <div>
-          <ScarcityBar scarcity={reco.scarcity} />
+          <ScarcityBar waitAnalysis={reco.waitAnalysis} />
         </div>
       )}
 

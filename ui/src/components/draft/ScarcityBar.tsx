@@ -1,14 +1,14 @@
 import clsx from 'clsx'
-import type { PositionalScarcity } from '../../types'
+import type { WaitScenario } from '../../types'
 
 interface Props {
-  scarcity: PositionalScarcity[]
+  waitAnalysis: WaitScenario[]
 }
 
-const MAX_VIABLE = 18   // baseline for 100% bar width
+export function ScarcityBar({ waitAnalysis }: Props) {
+  if (waitAnalysis.length === 0) return null
 
-export function ScarcityBar({ scarcity }: Props) {
-  if (scarcity.length === 0) return null
+  const maxCost = Math.max(...waitAnalysis.map(s => s.vorCostOfWaiting), 1)
 
   return (
     <div>
@@ -16,10 +16,10 @@ export function ScarcityBar({ scarcity }: Props) {
         Positional Scarcity
       </div>
       <div className="space-y-2.5">
-        {scarcity.map(s => {
-          const pctRemaining = Math.min(1, s.viableRemaining / MAX_VIABLE)
-          const isLow = s.viableRemaining <= 6
-          const isMed = s.viableRemaining > 6 && s.viableRemaining <= 12
+        {waitAnalysis.map(s => {
+          const pct = Math.min(1, Math.max(0, s.vorCostOfWaiting / maxCost))
+          const isHigh = s.vorCostOfWaiting > 10
+          const isMed = s.vorCostOfWaiting > 5 && s.vorCostOfWaiting <= 10
 
           return (
             <div key={s.position}>
@@ -27,18 +27,18 @@ export function ScarcityBar({ scarcity }: Props) {
                 <span className="text-xs font-medium text-text-secondary">{s.position}</span>
                 <span className={clsx(
                   'text-xs font-mono',
-                  isLow ? 'text-red-400' : isMed ? 'text-yellow-400' : 'text-text-muted'
+                  isHigh ? 'text-red-400' : isMed ? 'text-yellow-400' : 'text-text-muted'
                 )}>
-                  {s.viableRemaining} viable
+                  -{s.vorCostOfWaiting.toFixed(1)} VOR cost
                 </span>
               </div>
               <div className="h-2 bg-bg-elevated rounded-full overflow-hidden">
                 <div
                   className={clsx(
                     'h-full rounded-full transition-all',
-                    isLow ? 'bg-red-500' : isMed ? 'bg-yellow-500' : 'bg-accent'
+                    isHigh ? 'bg-red-500' : isMed ? 'bg-yellow-500' : 'bg-accent'
                   )}
-                  style={{ width: `${Math.round(pctRemaining * 100)}%` }}
+                  style={{ width: `${Math.round(pct * 100)}%` }}
                 />
               </div>
             </div>
