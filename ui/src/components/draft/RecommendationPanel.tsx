@@ -44,7 +44,7 @@ export function RecommendationPanel() {
   if (!reco) {
     return (
       <div className="flex-1 flex items-center justify-center text-text-muted text-sm">
-        Waiting for pick...
+        Loading recommendations...
       </div>
     )
   }
@@ -58,8 +58,8 @@ export function RecommendationPanel() {
       {/* Header label */}
       <div className="flex items-center gap-2">
         <Zap size={14} className="text-accent" />
-        <span className="text-xs font-bold tracking-widest text-accent uppercase">
-          {isShowingAlt ? 'Alternative Pick' : 'Your Best Pick'}
+        <span className="text-xs font-bold tracking-widest text-accent uppercase animate-pulse">
+          {isShowingAlt ? 'Alternative Pick' : 'Your Pick — Choose Wisely'}
         </span>
         {isShowingAlt && (
           <button

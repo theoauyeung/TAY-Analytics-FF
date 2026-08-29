@@ -53,6 +53,7 @@ export type DraftAction =
   | { type: 'UNDO_LAST_PICK' }
   | { type: 'RESET_DRAFT' }
   | { type: 'UPDATE_CONFIG'; config: DraftConfig }
+  | { type: 'START_DRAFT' }
 
 export function draftReducer(state: LiveDraftState, action: DraftAction): LiveDraftState {
   switch (action.type) {
@@ -91,11 +92,14 @@ export function draftReducer(state: LiveDraftState, action: DraftAction): LiveDr
         currentOverallPick: state.currentOverallPick - 1,
       }
 
+    case 'START_DRAFT':
+      return { ...state, draftPhase: 'active' }
+
     case 'RESET_DRAFT':
-      return { ...state, picks: [], currentOverallPick: 1 }
+      return { ...state, picks: [], currentOverallPick: 1, draftPhase: 'setup' }
 
     case 'UPDATE_CONFIG':
-      return { ...state, config: action.config, picks: [], currentOverallPick: 1 }
+      return { ...state, config: action.config, picks: [], currentOverallPick: 1, draftPhase: 'setup' }
 
     default:
       return state
@@ -125,6 +129,7 @@ const INITIAL_STATE: LiveDraftState = {
   config: DEFAULT_DRAFT_CONFIG,
   picks: [],
   currentOverallPick: 1,
+  draftPhase: 'setup',
 }
 
 function loadPersistedState(): LiveDraftState {
@@ -133,7 +138,7 @@ function loadPersistedState(): LiveDraftState {
     if (!raw) return INITIAL_STATE
     const parsed = JSON.parse(raw) as LiveDraftState
     if (!parsed.config || !Array.isArray(parsed.picks)) return INITIAL_STATE
-    return parsed
+    return { ...INITIAL_STATE, ...parsed, draftPhase: parsed.draftPhase ?? 'setup' }
   } catch {
     return INITIAL_STATE
   }

@@ -6,14 +6,19 @@ import { useRankings } from '../../hooks/useRankings'
 import { useDraftState } from '../../hooks/useDraftState'
 import { PositionBadge } from '../ui/Badge'
 import { ADP_VALUE_THRESHOLD, ADP_OVERVALUED_THRESHOLD } from '../../lib/thresholds'
+import { useDraftContext } from '../../state/draftState'
 
 const POSITION_FILTERS: Array<Position | 'ALL'> = ['ALL', 'QB', 'RB', 'WR', 'TE']
 
 export function AvailablePlayers() {
-  const { availablePlayers, draftPlayer } = useDraftState()
+  const { availablePlayers, draftPlayer, isUserTurn } = useDraftState()
+  const { state } = useDraftContext()
   const [search, setSearch] = useState('')
   const [posFilter, setPosFilter] = useState<Position | 'ALL'>('ALL')
   const [pendingId, setPendingId] = useState<string | null>(null)
+
+  const totalPicks = state.config.teams * state.config.totalRounds
+  const isDraftComplete = state.currentOverallPick > totalPicks
 
   const { rankings } = useRankings({
     position: 'ALL',
@@ -130,9 +135,9 @@ export function AvailablePlayers() {
                   isPending ? 'bg-accent/10' : 'hover:bg-bg-elevated'
                 )}
               >
-                {/* Rank */}
+                {/* ADP position */}
                 <span className="text-xs font-mono text-text-muted w-6 text-right flex-shrink-0">
-                  {ranking.rank}
+                  {ranking.adp ? Math.round(ranking.adp) : '–'}
                 </span>
 
                 {/* Headshot */}
@@ -164,31 +169,24 @@ export function AvailablePlayers() {
                 {/* Position badge */}
                 <PositionBadge position={ranking.player.position} />
 
-                {/* Projected points */}
-                <span className="text-xs font-mono text-text-secondary flex-shrink-0">
-                  {ranking.projection.toFixed(0)}
+                {/* TAY rank — our model's ranking */}
+                <span
+                  className={clsx(
+                    'text-xs font-mono font-bold flex-shrink-0 px-1.5 py-0.5 rounded',
+                    adpDelta <= ADP_VALUE_THRESHOLD
+                      ? 'text-green-400 bg-green-400/10'
+                      : adpDelta >= ADP_OVERVALUED_THRESHOLD
+                      ? 'text-red-400 bg-red-400/10'
+                      : 'text-text-muted bg-bg-elevated'
+                  )}
+                  title={`TAY rank #${ranking.rank} · ADP ${ranking.adp}`}
+                >
+                  #{ranking.rank}
                 </span>
-
-                {/* ADP delta */}
-                {adpDelta !== 0 && (
-                  <span
-                    className={clsx(
-                      'text-xs font-mono flex-shrink-0',
-                      adpDelta <= ADP_VALUE_THRESHOLD
-                        ? 'text-green-400'
-                        : adpDelta >= ADP_OVERVALUED_THRESHOLD
-                        ? 'text-red-400'
-                        : 'text-text-muted'
-                    )}
-                  >
-                    {adpDelta > 0 ? '+' : ''}
-                    {adpDelta}
-                  </span>
-                )}
               </div>
 
-              {/* Inline draft confirmation */}
-              {isPending && (
+              {/* Inline draft confirmation — only on user's turn or draft complete */}
+              {isPending && (isUserTurn || isDraftComplete) && (
                 <div
                   onMouseDown={e => e.stopPropagation()}
                   className="flex items-center gap-2 px-3 py-2 bg-accent/10 border-b border-accent/30"
@@ -203,16 +201,7 @@ export function AvailablePlayers() {
                     }}
                     className="px-2.5 py-1 text-xs font-bold bg-accent text-bg-primary rounded-lg hover:opacity-90 transition-opacity"
                   >
-                    Mine
-                  </button>
-                  <button
-                    onClick={e => {
-                      e.stopPropagation()
-                      handleDraft(ranking.player, false)
-                    }}
-                    className="px-2.5 py-1 text-xs font-medium border border-border text-text-secondary rounded-lg hover:text-text-primary hover:border-accent transition-colors"
-                  >
-                    Other
+                    Pick for my team
                   </button>
                   <button
                     onClick={e => {

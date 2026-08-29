@@ -46,6 +46,7 @@ export interface LiveDraftState {
   config: DraftConfig
   picks: DraftedPick[]        // all picks made so far in order
   currentOverallPick: number  // next pick to be made (1-indexed)
+  draftPhase: 'setup' | 'active'
 }
 
 // Legacy — kept for type compatibility, not used by Draft Assistant
