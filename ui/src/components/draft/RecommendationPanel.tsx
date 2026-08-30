@@ -14,7 +14,7 @@ import { NextRoundBoardPanel } from './NextRoundBoardPanel'
 
 export function RecommendationPanel() {
   const { state, draftPlayer } = useDraftState()
-  const { recommendation: reco, error: recoError } = useRecommendation()
+  const { recommendation: reco, isRefreshing, error: recoError } = useRecommendation()
   const { rankings } = useRankings({ position: 'ALL', search: '', format: 'ppr', draftType: 'redraft', year: 2026, tierFilter: null })
   const [selectedAltIdx, setSelectedAltIdx] = useState<number | null>(null)
 
@@ -62,6 +62,12 @@ export function RecommendationPanel() {
         <span className="text-xs font-bold tracking-wide text-accent uppercase">
           {isShowingAlt ? 'Alternative Pick' : 'Your Pick'}
         </span>
+        {isRefreshing && (
+          <span className="flex items-center gap-1 text-xs text-text-muted">
+            <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+            Updating…
+          </span>
+        )}
         {isShowingAlt && (
           <button
             onClick={() => setSelectedAltIdx(null)}

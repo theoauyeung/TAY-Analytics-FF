@@ -7,6 +7,7 @@ import { fetchRecommendation, saveSession } from '../api/draft'
 
 export interface UseRecommendationResult {
   recommendation: RecommendationState | null
+  isRefreshing: boolean
   error: Error | null
 }
 
@@ -14,6 +15,7 @@ export function useRecommendation(): UseRecommendationResult {
   const { state } = useDraftState()
   const isUserTurn = picksUntilNextTurn(state) === 0
   const sessionIdRef = useRef<string | null>(null)
+  const lastRef = useRef<RecommendationState | null>(null)
 
   useEffect(() => {
     const stored = sessionStorage.getItem('tay-draft-session-id')
@@ -38,7 +40,7 @@ export function useRecommendation(): UseRecommendationResult {
   const draftStarted = state.picks.length > 0 || state.currentOverallPick > 1
   const isDraftComplete = state.currentOverallPick > totalPicks
 
-  const { data, error } = useQuery({
+  const { data, isFetching, error } = useQuery({
     queryKey: ['recommendation', state.currentOverallPick, state.picks.length],
     queryFn: () => fetchRecommendation(state),
     enabled: isUserTurn && draftStarted && !isDraftComplete,
@@ -46,5 +48,13 @@ export function useRecommendation(): UseRecommendationResult {
     retry: false,
   })
 
-  return { recommendation: data ?? null, error: error as Error | null }
+  // Keep last successful recommendation so we can show it while refreshing
+  if (data) {
+    lastRef.current = data
+  }
+
+  const recommendation = data ?? lastRef.current
+  const isRefreshing = isFetching && lastRef.current !== null
+
+  return { recommendation, isRefreshing, error: error as Error | null }
 }
