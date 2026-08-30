@@ -7,6 +7,8 @@ export interface RosterConfig {
   TE: number
   FLEX: number
   BENCH: number
+  K?: number
+  DST?: number
 }
 
 export interface LeagueSettings {

@@ -21,8 +21,8 @@ function buildSlots(config: RosterConfig): SlotDef[] {
   add('WR', 'WR', config.WR)
   add('TE', 'TE', config.TE)
   add('FLEX', 'FLEX', config.FLEX)
-  if (config.K > 0) add('K', 'K', config.K)
-  if (config.DST > 0) add('DST', 'DST', config.DST)
+  if ((config.K ?? 0) > 0) add('K', 'K', config.K!)
+  if ((config.DST ?? 0) > 0) add('DST', 'DST', config.DST!)
   add('BN', 'BENCH', config.BENCH)
   return slots
 }

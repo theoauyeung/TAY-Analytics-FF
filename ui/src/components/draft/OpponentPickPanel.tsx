@@ -9,7 +9,7 @@ import { getPickingTeam, computeUserPickNumbers } from '../../state/draftState'
 export function OpponentPickPanel() {
   const { state, draftPlayer, picksUntil } = useDraftState()
   const { currentOverallPick, config, picks } = state
-  const { teams, totalRounds } = config
+  const { teams } = config
 
   const { rankings } = useRankings({
     position: 'ALL',

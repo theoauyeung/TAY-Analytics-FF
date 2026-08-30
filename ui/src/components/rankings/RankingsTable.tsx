@@ -20,7 +20,7 @@ const COLUMN_GROUPS: { label: string; cols: ColumnKey[] }[] = [
 const GROUPED_COLS = new Set(COLUMN_GROUPS.flatMap(g => g.cols))
 
 export function RankingsTable({ rankings, visibleColumns, isLoading }: Props) {
-  const cols = visibleColumns.filter(c => c !== 'rank' && c !== 'player' && c !== 'tier' && c !== 'position' && c !== 'team')
+  const cols = visibleColumns.filter(c => c !== 'rank' && c !== 'player' && c !== 'tier' && c !== 'position' && c !== 'team') as ColumnKey[]
 
   const activeGroups = COLUMN_GROUPS
     .map(g => ({ ...g, span: g.cols.filter(c => cols.includes(c)).length }))
