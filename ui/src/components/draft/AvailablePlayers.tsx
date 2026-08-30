@@ -233,6 +233,18 @@ export function AvailablePlayers() {
                   </button>
                 </div>
               )}
+
+              {/* Guidance when not user's turn */}
+              {isPending && !isUserTurn && !isDraftComplete && (
+                <div
+                  onMouseDown={e => e.stopPropagation()}
+                  className="flex items-center px-3 py-2 border-b border-border/30"
+                >
+                  <span className="text-xs text-text-muted italic">
+                    Use the center panel to log opponent picks
+                  </span>
+                </div>
+              )}
             </div>
           )
         })}
