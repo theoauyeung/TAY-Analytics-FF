@@ -25,7 +25,16 @@ export default function RosterAnalyzer() {
   }) ?? null
 
   return (
-    <div className="flex h-full overflow-hidden">
+    <div className="h-screen flex flex-col overflow-hidden">
+      <div className="border-b-2 border-border px-6 pt-5 pb-4 bg-bg-secondary flex-shrink-0">
+        <h1 className="text-4xl font-condensed font-bold tracking-tight text-text-primary uppercase leading-none">
+          Roster Analyzer
+        </h1>
+        <p className="text-[11px] font-condensed tracking-[0.12em] text-text-muted uppercase mt-1.5">
+          {settings.teams}-team · {settings.format.toUpperCase()} · 2026 Season
+        </p>
+      </div>
+      <div className="flex flex-1 overflow-hidden">
       {/* Left: roster builder */}
       <div className="w-80 flex-shrink-0 flex flex-col border-r border-border bg-bg-secondary overflow-hidden p-4 gap-4">
         <div>
@@ -83,6 +92,7 @@ export default function RosterAnalyzer() {
             Add players from the left panel to begin analysis
           </div>
         )}
+      </div>
       </div>
     </div>
   )

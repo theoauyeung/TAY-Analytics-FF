@@ -21,11 +21,16 @@ export default function Settings() {
   const { settings, update, reset } = useLeagueSettings()
 
   return (
-    <div className="p-6 max-w-2xl space-y-8 overflow-y-auto h-full">
-      <div>
-        <h1 className="text-xl font-bold text-text-primary">Settings</h1>
-        <p className="text-sm text-text-secondary mt-0.5">League configuration · Saved automatically</p>
+    <div className="h-screen flex flex-col overflow-hidden">
+      <div className="border-b-2 border-border px-6 pt-5 pb-4 bg-bg-secondary flex-shrink-0">
+        <h1 className="text-4xl font-condensed font-bold tracking-tight text-text-primary uppercase leading-none">
+          Settings
+        </h1>
+        <p className="text-[11px] font-condensed tracking-[0.12em] text-text-muted uppercase mt-1.5">
+          League Configuration · Saved Automatically
+        </p>
       </div>
+    <div className="flex-1 overflow-y-auto p-6 max-w-2xl space-y-8">
 
       {/* Scoring Format */}
       <section>
@@ -103,6 +108,7 @@ export default function Settings() {
           Reset to Defaults
         </button>
       </section>
+    </div>
     </div>
   )
 }

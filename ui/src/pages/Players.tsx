@@ -39,7 +39,16 @@ export default function Players() {
   }
 
   return (
-    <div className="flex h-full overflow-hidden">
+    <div className="h-screen flex flex-col overflow-hidden">
+      <div className="border-b-2 border-border px-6 pt-5 pb-4 bg-bg-secondary flex-shrink-0">
+        <h1 className="text-4xl font-condensed font-bold tracking-tight text-text-primary uppercase leading-none">
+          Players
+        </h1>
+        <p className="text-[11px] font-condensed tracking-[0.12em] text-text-muted uppercase mt-1.5">
+          PPR · 2026 Season · TAY Model
+        </p>
+      </div>
+      <div className="flex flex-1 overflow-hidden">
       {/* Left: search + list */}
       <div className="w-72 flex-shrink-0 flex flex-col border-r border-border bg-bg-secondary overflow-hidden">
         <div className="p-3 border-b border-border">
@@ -130,6 +139,7 @@ export default function Players() {
           {isLoading ? 'Loading…' : 'Select a player'}
         </div>
       )}
+      </div>
     </div>
   )
 }
