@@ -29,37 +29,45 @@ def run_pipeline(
     print(f"  {n:,} player-feature rows")
 
     print("Step 3b: Backfilling vacated opportunity into player features...")
-    # Use current team from players table (reflects upcoming season assignment),
-    # falling back to pf.team (prior season) when not found.
-    # For RBs, weight vacated carries by 1/depth_chart_pos so starters get
-    # more credit than backups — prevents all RBs on a team from receiving the
-    # same inflated opportunity signal.
+    # Build a temp map of gsis_id → current team (from players table, which
+    # reflects upcoming season assignment). Fall back to pf.team when absent.
     conn.execute("""
-        UPDATE player_features pf
-        SET incoming_vacated_targets = (
-            SELECT CASE
+        CREATE OR REPLACE TEMP TABLE _current_teams AS
+        SELECT pf.gsis_id, pf.season,
+               COALESCE(pl.team, pf.team) AS current_team
+        FROM player_features pf
+        LEFT JOIN players pl ON pl.gsis_id = pf.gsis_id
+    """)
+    # Pre-compute vacated values for all rows, then apply via UPDATE FROM to
+    # avoid DuckDB correlated-subquery limitations.
+    conn.execute("""
+        CREATE OR REPLACE TEMP TABLE _vacated_updates AS
+        SELECT
+            ct.gsis_id,
+            ct.season,
+            CASE
                 WHEN pf.position = 'WR' THEN tf.vacated_wr_targets
                 WHEN pf.position = 'TE' THEN tf.vacated_te_targets
                 WHEN pf.position = 'QB' THEN tf.vacated_qb_attempts
                 ELSE 0
-            END
-            FROM team_features tf
-            LEFT JOIN players pl ON pl.gsis_id = pf.gsis_id
-            WHERE tf.team = COALESCE(pl.team, pf.team)
-              AND tf.season = pf.season
-        ),
-        incoming_vacated_carries = (
-            SELECT CASE
+            END AS incoming_vacated_targets,
+            CASE
                 WHEN pf.position = 'RB' THEN
                     COALESCE(tf.vacated_rb_carries, 0)
                     / COALESCE(pf.depth_chart_pos, 2)
                 ELSE 0
-            END
-            FROM team_features tf
-            LEFT JOIN players pl ON pl.gsis_id = pf.gsis_id
-            WHERE tf.team = COALESCE(pl.team, pf.team)
-              AND tf.season = pf.season
-        )
+            END AS incoming_vacated_carries
+        FROM _current_teams ct
+        JOIN team_features tf ON tf.team = ct.current_team AND tf.season = ct.season
+        JOIN player_features pf ON pf.gsis_id = ct.gsis_id AND pf.season = ct.season
+    """)
+    conn.execute("""
+        UPDATE player_features
+        SET incoming_vacated_targets = u.incoming_vacated_targets,
+            incoming_vacated_carries = u.incoming_vacated_carries
+        FROM _vacated_updates u
+        WHERE player_features.gsis_id = u.gsis_id
+          AND player_features.season = u.season
     """)
     conn.commit()
 
