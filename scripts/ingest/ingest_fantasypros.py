@@ -2,7 +2,7 @@
 """Ingest FantasyPros consensus projections and refresh rankings.
 
 Usage:
-    uv run python scripts/ingest_fantasypros.py --season 2026
+    uv run python scripts/ingest/ingest_fantasypros.py --season 2026
 
 Orchestrates the full consensus refresh:
   1. Scrape FantasyPros (4 positions)
@@ -19,7 +19,7 @@ from pathlib import Path
 import requests
 from bs4 import BeautifulSoup
 
-sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
 from tay.db import get_conn, init_schema
 from tay.projections.blend import blend_projections

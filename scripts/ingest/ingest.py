@@ -3,7 +3,7 @@
 Full ingestion pipeline — populates data/ff.duckdb.
 
 Usage:
-    python scripts/ingest.py [--seasons 2005-2025] [--skip-pbp] [--season-only 2024]
+    python scripts/ingest/ingest.py [--seasons 2005-2025] [--skip-pbp] [--season-only 2024]
 
 Steps:
     1. Initialize DuckDB schema
@@ -21,7 +21,7 @@ import time
 from pathlib import Path
 
 # Ensure src/ is on the path when running as script
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from tay.db import get_conn, init_schema
 from tay.ingestion import (

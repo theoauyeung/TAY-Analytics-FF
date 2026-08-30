@@ -2,13 +2,13 @@
 """Run Monte Carlo simulation pipeline.
 
 Usage:
-    python scripts/run_simulation.py [--season 2026] [--model-version neural-v1]
+    python scripts/run/run_simulation.py [--season 2026] [--model-version neural-v1]
 """
 import argparse
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
 from tay.db import get_conn, init_schema
 from tay.simulation.pipeline import run_simulation_pipeline

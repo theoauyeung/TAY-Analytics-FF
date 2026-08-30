@@ -18,7 +18,7 @@ def _make_conn_with_team_data():
 
 
 def test_cluster_ids_are_integers():
-    from scripts.compute_scheme_clusters import compute_and_store_clusters
+    from scripts.features.compute_scheme_clusters import compute_and_store_clusters
     conn = _make_conn_with_team_data()
     compute_and_store_clusters(conn, seasons=[2022, 2023], n_clusters=2)
     rows = conn.execute("SELECT cluster_id FROM scheme_clusters").fetchall()
@@ -29,7 +29,7 @@ def test_cluster_ids_are_integers():
 
 
 def test_cluster_ids_in_range():
-    from scripts.compute_scheme_clusters import compute_and_store_clusters
+    from scripts.features.compute_scheme_clusters import compute_and_store_clusters
     conn = _make_conn_with_team_data()
     compute_and_store_clusters(conn, seasons=[2022, 2023], n_clusters=3)
     rows = conn.execute("SELECT DISTINCT cluster_id FROM scheme_clusters").fetchall()
@@ -39,7 +39,7 @@ def test_cluster_ids_in_range():
 
 
 def test_cluster_idempotent():
-    from scripts.compute_scheme_clusters import compute_and_store_clusters
+    from scripts.features.compute_scheme_clusters import compute_and_store_clusters
     conn = _make_conn_with_team_data()
     compute_and_store_clusters(conn, seasons=[2022], n_clusters=2)
     compute_and_store_clusters(conn, seasons=[2022], n_clusters=2)

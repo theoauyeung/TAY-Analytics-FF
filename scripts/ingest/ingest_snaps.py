@@ -2,7 +2,7 @@
 """Ingest nflverse weekly snap count CSVs into snap_counts table.
 
 Usage:
-    uv run python scripts/ingest_snaps.py --start 2016 --end 2025
+    uv run python scripts/ingest/ingest_snaps.py --start 2016 --end 2025
 
 The nflverse snap_counts CSV uses pfr_player_id (PFR format, e.g. BrowSp00).
 We download the nflverse players crosswalk to map pfr_id -> gsis_id.
@@ -16,7 +16,7 @@ from pathlib import Path
 
 import requests
 
-sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
 from tay.db import get_conn, init_schema
 

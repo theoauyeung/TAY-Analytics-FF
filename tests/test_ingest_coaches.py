@@ -10,7 +10,7 @@ def _make_conn():
 
 
 def test_upsert_coaches_rows():
-    from scripts.ingest_coaches import upsert_coaches
+    from scripts.ingest.ingest_coaches import upsert_coaches
     conn = _make_conn()
     raw = [
         {'team': 'KC', 'season': 2023, 'coach_type': 'offensive_coordinator', 'full_name': 'Matt Nagy'},
@@ -23,7 +23,7 @@ def test_upsert_coaches_rows():
 
 
 def test_upsert_coaches_idempotent():
-    from scripts.ingest_coaches import upsert_coaches
+    from scripts.ingest.ingest_coaches import upsert_coaches
     conn = _make_conn()
     raw = [{'team': 'KC', 'season': 2023, 'coach_type': 'head_coach', 'full_name': 'Andy Reid'}]
     upsert_coaches(conn, raw)
@@ -34,7 +34,7 @@ def test_upsert_coaches_idempotent():
 
 
 def test_compute_oc_features_no_history():
-    from scripts.ingest_coaches import compute_oc_features
+    from scripts.ingest.ingest_coaches import compute_oc_features
     conn = _make_conn()
     # OC appearing for the first time (no prior seasons in coaches table) → is_rookie_oc = True
     conn.execute("INSERT INTO coaches VALUES ('DAL', 2024, 'offensive_coordinator', 'New Guy')")
@@ -48,7 +48,7 @@ def test_compute_oc_features_no_history():
 
 
 def test_compute_oc_features_with_history():
-    from scripts.ingest_coaches import compute_oc_features
+    from scripts.ingest.ingest_coaches import compute_oc_features
     conn = _make_conn()
     # Seed coaches + player stats to exercise the aggregation path
     conn.execute("INSERT INTO coaches VALUES ('KC', 2022, 'offensive_coordinator', 'Eric Bieniemy')")

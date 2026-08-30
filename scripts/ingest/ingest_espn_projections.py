@@ -2,7 +2,7 @@
 """Ingest ESPN Fantasy API consensus projections.
 
 Usage:
-    uv run python scripts/ingest_espn_projections.py --season 2026
+    uv run python scripts/ingest/ingest_espn_projections.py --season 2026
 
 Fetches ESPN projected stats, matches players via espn_id, and upserts
 to consensus_projections with source='espn'. Run before ingest_fantasypros.py
@@ -16,7 +16,7 @@ from pathlib import Path
 
 import requests
 
-sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
 from tay.db import get_conn, init_schema
 

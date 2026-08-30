@@ -2,7 +2,7 @@
 """Train position-specific neural network projection models.
 
 Usage:
-    python scripts/train_models.py [--epochs 200] [--train-end 2023]
+    python scripts/models/train_models.py [--epochs 200] [--train-end 2023]
                                    [--val-start 2024] [--val-end 2025]
                                    [--projection-season 2026]
                                    [--models-dir models]
@@ -11,7 +11,7 @@ import argparse
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
 from tay.models.pipeline import run_training_pipeline
 

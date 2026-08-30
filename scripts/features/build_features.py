@@ -2,13 +2,13 @@
 """Build feature tables from ingested DuckDB data.
 
 Usage:
-    python scripts/build_features.py [--start 2006] [--end 2025]
+    python scripts/features/build_features.py [--start 2006] [--end 2025]
 """
 import argparse
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from tay.features.pipeline import run_pipeline
 

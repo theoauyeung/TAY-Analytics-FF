@@ -5,14 +5,14 @@ Runs in ~30 seconds. Use this whenever you want to pull the latest
 consensus ADP from FantasyCalc and regenerate the full rankings.
 
 Usage:
-    python scripts/refresh_projections.py [--season 2026] [--epochs 150] [--teams 12]
+    python scripts/rankings/refresh_projections.py [--season 2026] [--epochs 150] [--teams 12]
 """
 import argparse
 import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from tay.db import get_conn, init_schema
 from tay.ingestion import fantasycalc

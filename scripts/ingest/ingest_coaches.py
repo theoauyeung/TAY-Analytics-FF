@@ -2,14 +2,14 @@
 """Ingest nflverse coaches data and compute OC historical features.
 
 Usage:
-    uv run python scripts/ingest_coaches.py --seasons 2016 2017 ... 2026
+    uv run python scripts/ingest/ingest_coaches.py --seasons 2016 2017 ... 2026
 """
 from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
 from tay.db import get_conn, init_schema
 

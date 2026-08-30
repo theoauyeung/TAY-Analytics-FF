@@ -2,14 +2,14 @@
 """Compute VOR, tiers, and ADP delta for projected players.
 
 Usage:
-    python scripts/compute_valuations.py [--season 2026] [--model-version neural-v1]
+    python scripts/rankings/compute_valuations.py [--season 2026] [--model-version neural-v1]
                                          [--teams 12]
 """
 import argparse
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
 from tay.db import get_conn, init_schema
 from tay.valuation.pipeline import run_valuation

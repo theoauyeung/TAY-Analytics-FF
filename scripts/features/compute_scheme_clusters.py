@@ -2,7 +2,7 @@
 """Compute scheme clusters from team_features via KMeans.
 
 Usage:
-    uv run python scripts/compute_scheme_clusters.py --seasons 2016 2017 ... 2026
+    uv run python scripts/features/compute_scheme_clusters.py --seasons 2016 2017 ... 2026
 """
 from __future__ import annotations
 import argparse
@@ -13,7 +13,7 @@ import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 
-sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 
 from tay.db import get_conn, init_schema
 

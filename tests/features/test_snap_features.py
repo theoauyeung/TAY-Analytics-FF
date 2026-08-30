@@ -73,7 +73,7 @@ def test_snap_counts_table_created(tmp_path):
 def test_insert_snap_counts(tmp_path):
     """ingest_snap_season writes one row per player with correct snap_share."""
     from tay.db import get_conn, init_schema
-    from scripts.ingest_snaps import ingest_snap_season
+    from scripts.ingest.ingest_snaps import ingest_snap_season
 
     conn = get_conn(tmp_path / 'test.duckdb')
     init_schema(conn)
