@@ -1,11 +1,19 @@
 """FastAPI application factory."""
 from __future__ import annotations
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from tay.db import get_conn, init_schema
 from tay.api.routers import health, players, rankings, draft, league
+
+_LOCAL_ORIGINS = [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:5175',
+]
 
 
 @asynccontextmanager
@@ -24,14 +32,10 @@ def create_app() -> FastAPI:
         version='0.1.0',
         lifespan=lifespan,
     )
+    extra = [o for o in os.environ.get('ALLOWED_ORIGINS', '').split(',') if o]
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[
-            'http://localhost:3000',
-            'http://localhost:5173',
-            'http://localhost:5174',
-            'http://localhost:5175',
-        ],
+        allow_origins=_LOCAL_ORIGINS + extra,
         allow_methods=['*'],
         allow_headers=['*'],
     )
