@@ -1,5 +1,7 @@
 """Recommendation engine — loads projections and scores available players."""
 from __future__ import annotations
+import time
+import logging
 import duckdb
 
 from tay.draft.board import build_board_analysis
@@ -8,6 +10,10 @@ from tay.draft.models import (
     WaitScenario, NextRoundPositionSummary,
 )
 from tay.draft.scoring import score_player
+
+logger = logging.getLogger(__name__)
+
+_projection_cache: dict[tuple[int, str], list[PlayerProjection]] = {}
 
 _LOAD_SQL = """
     SELECT pr.gsis_id, p.name, p.position, p.team,
@@ -39,17 +45,25 @@ def load_projections(
     model_version: str,
     drafted_ids: list[str],
 ) -> list[PlayerProjection]:
-    rows = conn.execute(_LOAD_SQL, [season, model_version]).fetchall()
+    cache_key = (season, model_version)
+    if cache_key not in _projection_cache:
+        t0 = time.perf_counter()
+        rows = conn.execute(_LOAD_SQL, [season, model_version]).fetchall()
+        _projection_cache[cache_key] = [
+            PlayerProjection(
+                gsis_id=r[0], name=r[1], position=r[2], team=r[3],
+                vor=r[4], vor_rank=r[5], sim_mean=r[6],
+                sim_p10=r[7], sim_p90=r[8], adp=r[9],
+                tier=r[10], sim_boom_prob=r[11], sim_bust_prob=r[12],
+            )
+            for r in rows
+        ]
+        logger.info("projection DB query: %.0fms", (time.perf_counter() - t0) * 1000)
+    else:
+        logger.info("projection cache hit for season=%s model=%s", season, model_version)
+
     drafted_set = set(drafted_ids)
-    return [
-        PlayerProjection(
-            gsis_id=r[0], name=r[1], position=r[2], team=r[3],
-            vor=r[4], vor_rank=r[5], sim_mean=r[6],
-            sim_p10=r[7], sim_p90=r[8], adp=r[9],
-            tier=r[10], sim_boom_prob=r[11], sim_bust_prob=r[12],
-        )
-        for r in rows if r[0] not in drafted_set
-    ]
+    return [p for p in _projection_cache[cache_key] if p.gsis_id not in drafted_set]
 
 
 def _compute_next_user_picks(
@@ -133,7 +147,10 @@ def recommend(
     conn: duckdb.DuckDBPyConnection,
     state: DraftState,
 ) -> RecommendationState:
+    t_start = time.perf_counter()
+
     players = load_projections(conn, state.season, state.model_version, state.drafted_ids)
+    t_proj = time.perf_counter()
 
     teams = state.league_settings.teams
     total_rounds = state.total_picks // teams
@@ -151,9 +168,19 @@ def recommend(
         teams=state.league_settings.teams,
         user_pick_numbers=user_pick_numbers,
     )
+    t_board = time.perf_counter()
 
     scored = [score_player(p, state, board) for p in players]
     scored.sort(key=lambda r: r.draft_score, reverse=True)
+    t_score = time.perf_counter()
+
+    logger.info(
+        "recommend timings — projections: %.0fms, board: %.0fms, scoring: %.0fms, total: %.0fms",
+        (t_proj - t_start) * 1000,
+        (t_board - t_proj) * 1000,
+        (t_score - t_board) * 1000,
+        (t_score - t_start) * 1000,
+    )
 
     if not scored:
         raise ValueError(
