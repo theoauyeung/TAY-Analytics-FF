@@ -36,6 +36,7 @@ RB_FEATURES: list[str] = [
     'ewma_fantasy_ppr', 'ewma_carries',
     'team_pass_rate', 'team_total_plays',
     'incoming_vacated_carries',
+    'is_new_to_team',
     'depth_chart_pos', 'draft_pick_value',
     'target_share',
     'weekly_fpts_std',

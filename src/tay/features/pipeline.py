@@ -29,6 +29,11 @@ def run_pipeline(
     print(f"  {n:,} player-feature rows")
 
     print("Step 3b: Backfilling vacated opportunity into player features...")
+    # Use current team from players table (reflects upcoming season assignment),
+    # falling back to pf.team (prior season) when not found.
+    # For RBs, weight vacated carries by 1/depth_chart_pos so starters get
+    # more credit than backups — prevents all RBs on a team from receiving the
+    # same inflated opportunity signal.
     conn.execute("""
         UPDATE player_features pf
         SET incoming_vacated_targets = (
@@ -39,15 +44,21 @@ def run_pipeline(
                 ELSE 0
             END
             FROM team_features tf
-            WHERE tf.team = pf.team AND tf.season = pf.season
+            LEFT JOIN players pl ON pl.gsis_id = pf.gsis_id
+            WHERE tf.team = COALESCE(pl.team, pf.team)
+              AND tf.season = pf.season
         ),
         incoming_vacated_carries = (
             SELECT CASE
-                WHEN pf.position = 'RB' THEN tf.vacated_rb_carries
+                WHEN pf.position = 'RB' THEN
+                    COALESCE(tf.vacated_rb_carries, 0)
+                    / COALESCE(pf.depth_chart_pos, 2)
                 ELSE 0
             END
             FROM team_features tf
-            WHERE tf.team = pf.team AND tf.season = pf.season
+            LEFT JOIN players pl ON pl.gsis_id = pf.gsis_id
+            WHERE tf.team = COALESCE(pl.team, pf.team)
+              AND tf.season = pf.season
         )
     """)
     conn.commit()

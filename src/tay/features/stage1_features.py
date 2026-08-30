@@ -232,6 +232,8 @@ def build_stage1_features(
                 'new_team_pass_epa': tf[1] if tf else None,
                 'vacated_wr_targets': tf[2] if tf else None,
                 'vacated_rb_carries': tf[3] if tf else None,
+                'is_new_to_team': 1 if (team and prior_team and team != prior_team) else 0,
+                'prev_carries': float(s1[5]) if s1 and s1[5] else 0.0,
                 # OC/scheme
                 'oc_hist_wr1_target_share': oc_feat[0] if oc_feat else None,
                 'oc_hist_air_yards_pct': oc_feat[1] if oc_feat else None,
@@ -247,13 +249,29 @@ def build_stage1_features(
     if df.empty:
         return df
 
-    # Compute implicit depth chart rank within team × season × position
-    df['_ts_fill'] = df['ewma_target_share'].fillna(0.0)
+    # Compute implicit depth chart rank within team × season × position.
+    # RBs: rank by prior carry volume — a better proxy of starter role than
+    # target share, which biases toward pass-catching backs.
+    # All others: rank by target share EWMA.
+    import numpy as np
+    rb_mask = df['position'] == 'RB'
+    df['_rank_key'] = np.where(
+        rb_mask,
+        df['prev_carries'].fillna(0.0),
+        df['ewma_target_share'].fillna(0.0),
+    )
     df['depth_chart_rank'] = (
-        df.groupby(['team', 'season', 'position'])['_ts_fill']
+        df.groupby(['team', 'season', 'position'])['_rank_key']
         .rank(method='min', ascending=False)
         .astype(int)
     )
-    df.drop(columns=['_ts_fill'], inplace=True)
+    df.drop(columns=['_rank_key'], inplace=True)
+
+    # Weight vacated_rb_carries by depth_chart_rank so starters receive more
+    # of the opportunity signal than backups.
+    df.loc[rb_mask, 'vacated_rb_carries'] = (
+        df.loc[rb_mask, 'vacated_rb_carries'].fillna(0.0)
+        / df.loc[rb_mask, 'depth_chart_rank'].clip(lower=1)
+    )
 
     return df.reset_index(drop=True)

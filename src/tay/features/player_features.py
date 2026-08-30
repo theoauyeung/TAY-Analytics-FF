@@ -27,6 +27,7 @@ _LAG_COLUMNS = [
     ('ewma_targets',     'DOUBLE'),
     ('ewma_carries',     'DOUBLE'),
     ('ewma_pass_yards',  'DOUBLE'),
+    ('is_new_to_team',   'INTEGER'),
 ]
 
 
@@ -203,6 +204,13 @@ def build_player_features(
             age = _age_on_sept_1(birth_date, season)
             experience = (season - draft_year) if draft_year else None
 
+            # Current team (from players table — reflects upcoming season assignment)
+            cur_team_row = conn.execute(
+                "SELECT team FROM players WHERE gsis_id = ?", [gsis_id]
+            ).fetchone()
+            current_team = cur_team_row[0] if cur_team_row else team
+            is_new_to_team = 1 if (current_team and current_team != team) else 0
+
             conn.execute("""
                 INSERT OR REPLACE INTO player_features (
                     gsis_id, season, position, age, experience,
@@ -224,7 +232,8 @@ def build_player_features(
                     team, team_pass_rate, team_pass_epa, team_total_plays,
                     depth_chart_pos, is_rookie, draft_round, draft_pick, draft_pick_value,
                     combine_forty, combine_vertical,
-                    next_season_fantasy_ppr, next_season_games
+                    next_season_fantasy_ppr, next_season_games,
+                    is_new_to_team
                 ) VALUES (
                     ?, ?, ?, ?, ?,
                     ?, ?, ?, ?, ?,
@@ -239,7 +248,7 @@ def build_player_features(
                     ?, ?, ?, ?, ?,
                     ?, ?, ?, ?, ?,
                     ?, ?, ?, ?,
-                    ?, ?
+                    ?, ?, ?
                 )
             """, [
                 gsis_id, season, position, age, experience,
@@ -261,6 +270,7 @@ def build_player_features(
                 forty, vertical,
                 target_row[0] if target_row else None,
                 target_row[1] if target_row else None,
+                is_new_to_team,
             ])
             total += 1
 
