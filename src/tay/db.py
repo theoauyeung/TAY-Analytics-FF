@@ -1,9 +1,11 @@
 """DuckDB connection manager."""
+import os
 from pathlib import Path
 import duckdb
 from tay.schemas.tables import ALL_TABLES
 
-DB_PATH = Path(__file__).parent.parent.parent / "data" / "ff.duckdb"
+_DEFAULT_DB = Path(__file__).parent.parent.parent / "data" / "ff.duckdb"
+DB_PATH = Path(os.environ.get("TAY_DB_PATH", str(_DEFAULT_DB)))
 
 
 def get_conn(db_path: str | Path = DB_PATH) -> duckdb.DuckDBPyConnection:
