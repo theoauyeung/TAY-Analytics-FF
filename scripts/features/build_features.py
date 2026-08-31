@@ -2,7 +2,7 @@
 """Build feature tables from ingested DuckDB data.
 
 Usage:
-    python scripts/features/build_features.py [--start 2006] [--end 2025]
+    python scripts/features/build_features.py [--start 2006] [--end 2026]
 """
 import argparse
 import sys
@@ -16,7 +16,7 @@ from tay.features.pipeline import run_pipeline
 def main():
     p = argparse.ArgumentParser(description="TAY Analytics FF — feature engineering pipeline")
     p.add_argument("--start", type=int, default=2006, help="First target season (default 2006)")
-    p.add_argument("--end", type=int, default=2025, help="Last target season (default 2025)")
+    p.add_argument("--end", type=int, default=2026, help="Last target season (default 2026)")
     args = p.parse_args()
     run_pipeline(start=args.start, end=args.end)
 
