@@ -9,3 +9,12 @@ __pycache__/
 dist/
 .env
 # models/ and tay.db are committed — they ship with the deployment
+
+# internal docs / research artifacts — not for public repo
+docs/
+experiments/
+tests/
+autoresearch*.md
+autoresearch*.jsonl
+autoresearch*.sh
+models_ar/
