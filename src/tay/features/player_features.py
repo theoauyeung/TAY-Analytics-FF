@@ -274,8 +274,114 @@ def build_player_features(
             ])
             total += 1
 
+        # Rookies drafted in this season have no prior stats — build zero-baseline rows
+        rookies = conn.execute(f"""
+            SELECT p.gsis_id, p.position, p.birth_date,
+                   p.draft_round, p.draft_pick, p.draft_year, p.team
+            FROM players p
+            WHERE p.draft_year = ? AND p.position IN {SKILL_POS_SQL}
+              AND p.gsis_id IS NOT NULL
+              AND NOT EXISTS (
+                  SELECT 1 FROM player_features pf2
+                  WHERE pf2.gsis_id = p.gsis_id AND pf2.season = ?
+              )
+        """, [season, season]).fetchall()
+
+        for gsis_id, position, birth_date, draft_round, draft_pick, draft_year, rookie_team in rookies:
+            age = _age_on_sept_1(birth_date, season)
+            overall = (draft_round - 1) * 32 + draft_pick if draft_round and draft_pick else None
+            pick_value = _draft_pick_value(overall)
+            experience = 0
+
+            tf = conn.execute("""
+                SELECT pass_rate, pass_epa, total_plays
+                FROM team_features WHERE team = ? AND season = ?
+            """, [rookie_team, season]).fetchone()
+
+            try:
+                comb = conn.execute("""
+                    SELECT forty_yard, vertical FROM combine_data
+                    WHERE gsis_id = ? ORDER BY season LIMIT 1
+                """, [gsis_id]).fetchone()
+                forty = comb[0] if comb else None
+                vertical = comb[1] if comb else None
+            except Exception:
+                forty = None
+                vertical = None
+
+            target_row = conn.execute("""
+                SELECT fantasy_points_ppr, games
+                FROM player_season_stats WHERE gsis_id = ? AND season = ?
+            """, [gsis_id, season]).fetchone()
+
+            conn.execute("""
+                INSERT OR REPLACE INTO player_features (
+                    gsis_id, season, position, age, experience,
+                    prev_games, prev_targets, prev_receptions, prev_rec_yards, prev_rec_tds,
+                    prev_air_yards, prev_yac, prev_carries, prev_rush_yards, prev_rush_tds,
+                    prev_attempts, prev_completions, prev_pass_yards, prev_pass_tds,
+                    prev_interceptions, prev_fantasy_ppr,
+                    targets_per_game, catches_per_game, rec_yards_per_game, rec_tds_per_game,
+                    carries_per_game, rush_yards_per_game,
+                    catch_rate, yards_per_target, yards_per_carry,
+                    air_yards_per_target, yac_per_reception,
+                    pass_completion_pct, pass_yards_per_attempt,
+                    td_rate_receiving, td_rate_rushing,
+                    prev_epa_per_play, prev_cpoe,
+                    roll2_fantasy_ppr, roll2_targets, roll2_carries,
+                    lag2_fantasy_ppr, lag2_targets, lag2_carries, lag2_pass_yards,
+                    lag3_fantasy_ppr, lag3_targets, lag3_carries, lag3_pass_yards,
+                    ewma_fantasy_ppr, ewma_targets, ewma_carries, ewma_pass_yards,
+                    team, team_pass_rate, team_pass_epa, team_total_plays,
+                    depth_chart_pos, is_rookie, draft_round, draft_pick, draft_pick_value,
+                    combine_forty, combine_vertical,
+                    next_season_fantasy_ppr, next_season_games,
+                    is_new_to_team
+                ) VALUES (
+                    ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?,
+                    ?, ?, ?
+                )
+            """, [
+                gsis_id, season, position, age, experience,
+                0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0,
+                0.0,
+                0.0, 0.0, 0.0, 0.0,
+                0.0, 0.0,
+                None, None, None, None, None,
+                None, None, None, None,
+                None, None,
+                0.0, 0.0, 0.0,
+                None, None, None, None,
+                None, None, None, None,
+                0.0, 0.0, 0.0, 0.0,
+                rookie_team,
+                tf[0] if tf else None,
+                tf[1] if tf else None,
+                tf[2] if tf else None,
+                None, 1, draft_round, draft_pick, pick_value,
+                forty, vertical,
+                target_row[0] if target_row else None,
+                target_row[1] if target_row else None,
+                0,
+            ])
+            total += 1
+
         conn.commit()
-        print(f"  Season {season}: {total} player-feature rows built so far")
+        print(f"  Season {season}: {total} player-feature rows built so far ({len(rookies)} rookies added)")
 
     compute_advanced_features(conn, target_seasons)
     compute_snap_features(conn, target_seasons)

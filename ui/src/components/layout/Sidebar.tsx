@@ -19,7 +19,7 @@ export default function Sidebar() {
     <aside className="fixed left-0 top-0 h-screen w-56 bg-bg-secondary border-r border-border flex flex-col z-40">
       {/* Logo */}
       <div className="h-16 flex items-center px-4 border-b border-border gap-3">
-        <img src="/theo-logo.png" alt="THEO" className="h-8 w-8 object-contain" style={{ filter: 'invert(1) brightness(0.85)' }} />
+        <img src="/tay-logo.png" alt="TAY Analytics" className="h-8 w-8 object-contain" style={{ filter: 'invert(1) brightness(0.85)' }} />
         <span className="text-text-primary font-semibold text-sm tracking-wide">TAY Analytics</span>
       </div>
 
