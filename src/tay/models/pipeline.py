@@ -14,6 +14,47 @@ POSITIONS = ['QB', 'RB', 'WR', 'TE']
 MODEL_VERSION = 'neural-v1'
 _MC_SAMPLES = 200
 
+# Typical PPR output for a round-1 pick starting rookie by position.
+# Later rounds scale down by round tier (1.0 / 0.65 / 0.45 / 0.25).
+_ROOKIE_R1_BASELINE = {'QB': 260, 'RB': 160, 'WR': 125, 'TE': 105}
+
+
+def _apply_rookie_anchor(samples: np.ndarray, X_raw: np.ndarray,
+                          feature_names: list[str], pos: str) -> None:
+    """Blend rookie projections toward a round-calibrated baseline.
+
+    The neural net has almost no signal for rookies (all prior stats = 0),
+    so early picks get severely under-projected. We anchor each rookie's
+    projection toward a position baseline scaled by draft round tier.
+    """
+    rookie_idx = feature_names.index('is_rookie')        if 'is_rookie'        in feature_names else -1
+    pick_idx   = feature_names.index('draft_pick_value') if 'draft_pick_value' in feature_names else -1
+    if rookie_idx < 0 or pick_idx < 0:
+        return
+
+    baseline = _ROOKIE_R1_BASELINE.get(pos, 120)
+    round_tier = {1: 1.0, 2: 0.65, 3: 0.45}
+
+    for j in range(samples.shape[1]):
+        if float(X_raw[j, rookie_idx]) < 0.5:
+            continue
+
+        pick_val = float(X_raw[j, pick_idx])
+        if pick_val > 0:
+            overall = round(1.0 / (pick_val ** 2))
+            draft_round = max(1, (overall - 1) // 32 + 1)
+        else:
+            draft_round = 7
+
+        tier  = round_tier.get(draft_round, 0.25)
+        anchor = baseline * tier
+        # Round 1 → 80% anchor weight; round 2 → 52%; round 3+ → ~36%
+        w_anchor = max(0.35, tier * 0.80)
+        model_out = float(samples[:, j].mean())
+        target = (1.0 - w_anchor) * model_out + w_anchor * anchor
+        if model_out > 0:
+            samples[:, j] *= target / max(model_out, 10.0)
+
 
 def _mc_predict(model: PositionMLP, X: torch.Tensor) -> np.ndarray:
     """Run MC Dropout inference; returns array of shape (mc_samples, n_players)."""
@@ -273,6 +314,8 @@ def write_projections(
                         w_model = 0.25 if games < 10 else 0.40
                         target  = w_model * model_out + (1.0 - w_model) * anchor
                         samples[:, j] *= min(target / max(model_out, 20.0), 1.8)
+
+        _apply_rookie_anchor(samples, X_raw, feature_names, pos)
 
         for j, gsis_id in enumerate(gsis_ids):
             s = np.maximum(samples[:, j], 0.0)
