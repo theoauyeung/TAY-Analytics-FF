@@ -26,7 +26,7 @@ def compute_vor(
         weight = _SCARCITY_WEIGHT.get(pos, 1.0)
         conn.execute("""
             UPDATE projections
-            SET vor = (COALESCE(blended_projection, mean_projection) - ?) * ?
+            SET vor = (mean_projection - ?) * ?
             WHERE season = ? AND model_version = ?
               AND gsis_id IN (SELECT gsis_id FROM players WHERE position = ?)
         """, [repl, weight, season, model_version, pos])
