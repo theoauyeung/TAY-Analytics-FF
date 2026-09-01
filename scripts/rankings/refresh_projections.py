@@ -15,7 +15,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from tay.db import get_conn, init_schema
-from tay.ingestion import fantasycalc
+from tay.ingestion import espn, fantasycalc
 from tay.models.pipeline import write_projections
 from tay.valuation.pipeline import run_valuation
 from tay.valuation.replacement import ReplacementConfig
@@ -39,11 +39,13 @@ def main():
     print(f"=== TAY Analytics FF — Projection Refresh (season {args.season}) ===\n")
 
     # Step 1: fresh ADP
-    print("Step 1/3: Fetching FantasyCalc consensus ADP...")
+    print("Step 1/3: Fetching ADP (FantasyCalc + ESPN)...")
     conn.execute("DELETE FROM adp WHERE season = ? AND platform = 'fantasycalc'", [args.season])
+    conn.execute("DELETE FROM adp WHERE season = ? AND platform = 'espn'", [args.season])
     conn.commit()
     conn.close()
     fantasycalc.ingest(season=args.season)
+    espn.ingest(season=args.season)
     conn = get_conn()
 
     # Step 2: optionally retrain, then write projections
