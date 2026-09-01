@@ -1,0 +1,7 @@
+{
+  "_comment": "injury_discounts: multiply mean_projection by this factor before VOR is computed. 1.0 = no change.",
+  "injury_discounts": {
+    "Ashton Jeanty": 0.65,
+    "Josh Jacobs": 0.82
+  }
+}

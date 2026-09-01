@@ -8,6 +8,7 @@ Usage:
     python scripts/rankings/refresh_projections.py [--season 2026] [--epochs 150] [--teams 12]
 """
 import argparse
+import json
 import sys
 import time
 from pathlib import Path
@@ -63,6 +64,23 @@ def main():
         print("\nStep 2/3: Writing projections from existing checkpoints...")
         n = write_projections(conn, models_dir="models", projection_season=args.season)
         print(f"  {n} projections written")
+
+    # Step 2.5: apply injury / suspension discounts from data/player_flags.json
+    flags_path = Path(__file__).parent.parent.parent / "data" / "player_flags.json"
+    if flags_path.exists():
+        flags = json.loads(flags_path.read_text())
+        discounts = flags.get("injury_discounts", {})
+        if discounts:
+            print("\n  Injury discounts:")
+            for name, mult in discounts.items():
+                result = conn.execute("""
+                    UPDATE projections
+                    SET mean_projection = mean_projection * ?
+                    WHERE gsis_id IN (SELECT gsis_id FROM players WHERE name = ?)
+                      AND season = ?
+                """, [mult, name, args.season])
+                print(f"    {name}: ×{mult} ({result.rowcount} row)")
+            conn.commit()
 
     # Step 3: VOR + tiers + ADP delta
     print("\nStep 3/3: Computing VOR, tiers, ADP delta...")
