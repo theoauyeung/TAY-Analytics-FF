@@ -203,6 +203,7 @@ def write_projections(
             pick_idx      = feature_names.index('draft_pick_value')  if 'draft_pick_value'  in feature_names else -1
             lag2_idx      = feature_names.index('lag2_fantasy_ppr')  if 'lag2_fantasy_ppr'  in feature_names else -1
             ep17_idx      = feature_names.index('ewma_fpts_proj17')  if 'ewma_fpts_proj17'  in feature_names else -1
+            ewma_idx      = feature_names.index('ewma_fantasy_ppr')  if 'ewma_fantasy_ppr'  in feature_names else -1
 
             for j in range(len(gsis_ids)):
                 exp      = float(X_raw[j, exp_idx])  if exp_idx  >= 0 else 99.0
@@ -240,27 +241,29 @@ def write_projections(
 
                 # 3. Injury-season correction: when a QB played <15 games the model's
                 #    raw-volume inputs under-represent talent. Blend toward anchor from
-                #    lag2 PPR and per-game EWMA projection.
-                if games_played < 15 and lag2_idx >= 0 and ep17_idx >= 0:
-                    lag2   = float(X_raw[j, lag2_idx])
-                    ep17   = float(X_raw[j, ep17_idx])
+                #    lag2 PPR and EWMA projection.
+                #    Note: ewma_fpts_proj17 is often unpopulated (=0); fall back to
+                #    ewma_fantasy_ppr which is always available.
+                if games_played < 15 and lag2_idx >= 0:
+                    lag2     = float(X_raw[j, lag2_idx])
+                    ep17     = float(X_raw[j, ep17_idx]) if ep17_idx >= 0 else 0.0
+                    ewma_val = float(X_raw[j, ewma_idx]) if ewma_idx >= 0 else 0.0
+                    ep17_eff = ep17 if ep17 > 0 else ewma_val  # prefer ep17; fall back to ewma
+
                     if rush_score >= 150:
-                        # Rushing QBs: lag2 (last healthy season) is the persistent signal
-                        anchor = 0.7 * lag2 + 0.3 * ep17
+                        anchor = 0.7 * lag2 + 0.3 * ep17_eff
                     elif games_played < 10:
-                        # Severe injury: lag2 may be an outlier season; ewma17 is more stable
-                        anchor = ep17
+                        # Severe injury: blend lag2 (true talent) with ewma (injury-adjusted recent form)
+                        anchor = 0.40 * lag2 + 0.60 * ep17_eff
                     else:
-                        # Moderate injury: blend, but weight ewma17 more than lag2
-                        anchor = 0.30 * lag2 + 0.70 * ep17
+                        # Moderate injury: weight ewma more than lag2
+                        anchor = 0.30 * lag2 + 0.70 * ep17_eff
                     if anchor > 200:
                         model_out = float(samples[:, j].mean())
                         if rush_score >= 150:
                             w_model = 0.10 if games_played < 8 else 0.25
                             target  = w_model * model_out + (1.0 - w_model) * anchor
                         elif games_played < 10:
-                            # Severe injury pocket QB: cap at anchor + 5% to prevent
-                            # an outlier lag2 season from pulling projection far above ewma17.
                             target  = min(0.10 * model_out + 0.90 * anchor, anchor * 1.05)
                         else:
                             target  = 0.25 * model_out + 0.75 * anchor
