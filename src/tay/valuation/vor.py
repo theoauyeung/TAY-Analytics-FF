@@ -10,7 +10,7 @@ _SCARCITY_WEIGHT: dict[str, float] = {
     'QB': 0.30,
     'RB': 1.0,
     'WR': 0.85,
-    'TE': 0.60,
+    'TE': 0.50,
 }
 
 

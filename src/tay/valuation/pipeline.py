@@ -17,7 +17,8 @@ def compute_adp_delta(
     #   999     — Sleeper's search_rank placeholder for unranked players (483 rows)
     # Exclude both so adp_delta reflects only real consensus draft-position data.
     rows = conn.execute("""
-        SELECT pr.gsis_id, CAST(pr.vor_rank AS DOUBLE) - a.adp AS adp_delta_val
+        SELECT pr.gsis_id,
+               CAST(pr.vor_rank AS DOUBLE) - AVG(a.adp) AS adp_delta_val
         FROM projections pr
         JOIN adp a ON a.gsis_id = pr.gsis_id
                    AND a.season = pr.season
@@ -26,6 +27,7 @@ def compute_adp_delta(
           AND pr.vor_rank IS NOT NULL
           AND a.adp IS NOT NULL
           AND a.adp NOT IN (999, 9999999)
+        GROUP BY pr.gsis_id, pr.vor_rank
     """, [season, model_version]).fetchall()
 
     updated = 0
