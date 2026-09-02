@@ -4,7 +4,7 @@ import { PositionBadge } from '../ui/Badge'
 
 export function PickHistoryBoard() {
   const { state } = useDraftState()
-  const { picks, config } = state
+  const { picks } = state
 
   if (picks.length === 0) {
     return (
