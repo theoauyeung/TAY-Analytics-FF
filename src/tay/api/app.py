@@ -7,6 +7,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from tay.db import get_conn, init_schema
 from tay.api.routers import health, players, rankings, draft, league
+from tay.valuation.pipeline import run_valuation
+from tay.valuation.replacement import ReplacementConfig
 
 _LOCAL_ORIGINS = [
     'http://localhost:3000',
@@ -20,9 +22,39 @@ _LOCAL_ORIGINS = [
 async def lifespan(app: FastAPI):
     conn = get_conn()
     init_schema(conn)
+    # On Render, recompute VOR/tiers at startup so the persistent disk DB stays
+    # in sync with the latest pipeline (blended projections, replacement levels, etc.)
+    if os.environ.get('RENDER'):
+        _refresh_on_render(conn)
     app.state.conn = conn
     yield
     conn.close()
+
+
+def _refresh_on_render(conn) -> None:
+    from pathlib import Path
+    print('[startup] Render env detected — loading consensus snapshot and recomputing VOR...')
+    snapshot = Path(__file__).parent.parent.parent / 'data' / 'consensus_projections_2026.csv'
+    if snapshot.exists():
+        try:
+            conn.execute("DELETE FROM consensus_projections WHERE season = 2026")
+            conn.execute(f"""
+                INSERT INTO consensus_projections
+                    (gsis_id, season, source, pass_yards, pass_tds, interceptions,
+                     rush_yards, rush_tds, receptions, rec_yards, rec_tds, points)
+                SELECT gsis_id, season, source, pass_yards, pass_tds, interceptions,
+                       rush_yards, rush_tds, receptions, rec_yards, rec_tds, points
+                FROM read_csv_auto('{snapshot}')
+            """)
+            count = conn.execute(
+                "SELECT COUNT(*) FROM consensus_projections WHERE season = 2026"
+            ).fetchone()[0]
+            conn.commit()
+            print(f'[startup] Loaded {count} consensus rows from snapshot.')
+        except Exception as exc:
+            print(f'[startup] Snapshot load failed: {exc}')
+    run_valuation(conn, season=2026, model_version='neural-v1',
+                  config=ReplacementConfig(teams=12))
 
 
 def create_app() -> FastAPI:
