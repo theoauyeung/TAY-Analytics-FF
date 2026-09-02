@@ -2,6 +2,7 @@
 from __future__ import annotations
 import duckdb
 
+from tay.projections.blend import blend_projections
 from tay.valuation.replacement import ReplacementConfig, compute_replacement_levels
 from tay.valuation.vor import compute_vor
 from tay.valuation.tiers import assign_tiers
@@ -53,20 +54,24 @@ def run_valuation(
 
     print(f'=== TAY Analytics FF — Valuation Engine (season {season}) ===')
 
-    print('Step 1/4: Computing replacement levels...')
+    print('Step 1/5: Blending consensus + ML projections...')
+    blended_count = blend_projections(conn, season, model_version)
+    print(f'  {blended_count} players with true blended projection')
+
+    print('Step 2/5: Computing replacement levels...')
     levels = compute_replacement_levels(conn, season, model_version, config)
     for pos, lvl in levels.items():
         print(f'  {pos} replacement: {lvl:.1f} PPR pts')
 
-    print('Step 2/4: Computing VOR...')
+    print('Step 3/5: Computing VOR...')
     vor_rows = compute_vor(conn, season, model_version, levels)
     print(f'  {vor_rows} players updated with VOR')
 
-    print('Step 3/4: Assigning tiers...')
+    print('Step 4/5: Assigning tiers...')
     tier_rows = assign_tiers(conn, season, model_version, gap_threshold=15.0)
     print(f'  {tier_rows} players assigned tiers')
 
-    print('Step 4/4: Computing ADP delta...')
+    print('Step 5/5: Computing ADP delta...')
     adp_delta_rows = compute_adp_delta(conn, season, model_version)
     print(f'  {adp_delta_rows} players updated with ADP delta')
 
