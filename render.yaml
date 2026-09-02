@@ -2,7 +2,7 @@ services:
   - type: web
     name: tay-analytics-api
     runtime: python
-    buildCommand: pip install -e . && python scripts/ingest/ingest_espn_projections.py --season 2026 && python scripts/rankings/compute_valuations.py --season 2026
+    buildCommand: pip install -e . && (python scripts/ingest/ingest_espn_projections.py --season 2026 || python scripts/ingest/load_consensus_snapshot.py --season 2026) && python scripts/rankings/compute_valuations.py --season 2026
     startCommand: uvicorn tay.api.app:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: ALLOWED_ORIGINS
