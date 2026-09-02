@@ -11,7 +11,7 @@ const DEFAULT_DRAFT_CONFIG: DraftConfig = {
     WR: 2,
     TE: 1,
     FLEX: 2,
-    BENCH: 6,
+    BENCH: 5,
     K: 1,
     DST: 1,
   },
