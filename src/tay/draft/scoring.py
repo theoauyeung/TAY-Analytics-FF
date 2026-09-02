@@ -23,26 +23,38 @@ def roster_fit(
     user_roster: dict[str, list[str]],
     roster_config: dict[str, int] | None = None,
 ) -> float:
-    """Multiplier [0.5, 1.2] for how well player fills user's roster needs."""
+    """Multiplier [0.5, 1.3] reflecting how much this player fills a genuine roster need.
+
+    For FLEX-eligible positions the score scales with missing starter spots, then
+    drops once all skill slots are filled. This prevents the engine from always
+    recommending the same position after starter needs are met.
+    """
     pos = player.position
     requirements = roster_config if roster_config is not None else _STARTER_REQUIREMENTS
+    flex_spots = roster_config.get('FLEX', 1) if roster_config else 1
     filled = len(user_roster.get(pos, []))
     required = requirements.get(pos, 1)
 
-    flex_spots = roster_config.get('FLEX', 1) if roster_config else 1
-    score = 1.0
-    if filled == 0:
-        score += 0.2
-    elif pos in _FLEX_ELIGIBLE:
+    if pos in _FLEX_ELIGIBLE:
         total_skill_filled = sum(len(user_roster.get(p, [])) for p in _FLEX_ELIGIBLE)
         total_skill_required = sum(requirements.get(p, 0) for p in _FLEX_ELIGIBLE) + flex_spots
-        if filled >= required and total_skill_filled >= total_skill_required:
-            score -= 0.3
-    else:
-        if filled >= required:
-            score -= 0.3
+        starters_still_needed = max(0, required - filled)
 
-    return max(0.5, min(1.2, score))
+        if starters_still_needed > 0:
+            score = 1.0 + 0.15 * starters_still_needed
+        elif total_skill_filled >= total_skill_required:
+            score = 0.6
+        else:
+            score = 0.85
+    else:
+        if filled == 0:
+            score = 1.2
+        elif filled >= required:
+            score = 0.7
+        else:
+            score = 1.0
+
+    return max(0.5, min(1.3, score))
 
 
 def score_player(
