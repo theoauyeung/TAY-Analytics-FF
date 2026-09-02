@@ -24,9 +24,11 @@ def compute_vor(
     for pos in POSITIONS:
         repl = replacement_levels.get(pos, 0.0)
         weight = _SCARCITY_WEIGHT.get(pos, 1.0)
+        # Use blended_projection (model + consensus mix) so players with sparse
+        # model history (e.g. rookies) aren't systematically undervalued.
         conn.execute("""
             UPDATE projections
-            SET vor = (mean_projection - ?) * ?
+            SET vor = (COALESCE(blended_projection, mean_projection) - ?) * ?
             WHERE season = ? AND model_version = ?
               AND gsis_id IN (SELECT gsis_id FROM players WHERE position = ?)
         """, [repl, weight, season, model_version, pos])

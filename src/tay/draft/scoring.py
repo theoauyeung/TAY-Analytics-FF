@@ -4,7 +4,6 @@ from tay.draft.models import DraftState, PlayerProjection, Recommendation
 
 _FLEX_ELIGIBLE = {'RB', 'WR', 'TE'}
 _STARTER_REQUIREMENTS = {'QB': 1, 'RB': 2, 'WR': 2, 'TE': 1}
-_FLEX_SPOTS = 1
 _SCARCITY_THRESHOLDS: dict[str, int] = {'QB': 4, 'TE': 4, 'RB': 8, 'WR': 8}
 
 
@@ -30,12 +29,13 @@ def roster_fit(
     filled = len(user_roster.get(pos, []))
     required = requirements.get(pos, 1)
 
+    flex_spots = roster_config.get('FLEX', 1) if roster_config else 1
     score = 1.0
     if filled == 0:
         score += 0.2
     elif pos in _FLEX_ELIGIBLE:
         total_skill_filled = sum(len(user_roster.get(p, [])) for p in _FLEX_ELIGIBLE)
-        total_skill_required = sum(requirements.get(p, 0) for p in _FLEX_ELIGIBLE) + _FLEX_SPOTS
+        total_skill_required = sum(requirements.get(p, 0) for p in _FLEX_ELIGIBLE) + flex_spots
         if filled >= required and total_skill_filled >= total_skill_required:
             score -= 0.3
     else:

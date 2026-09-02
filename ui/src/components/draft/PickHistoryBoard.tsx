@@ -54,10 +54,13 @@ export function PickHistoryBoard() {
               </div>
             </div>
 
-            {/* Team indicator */}
-            {pick.isUserPick && (
-              <span className="text-xs text-accent font-bold flex-shrink-0">YOU</span>
-            )}
+            {/* Team number */}
+            <span className={clsx(
+              'text-xs font-mono flex-shrink-0 w-8 text-right',
+              pick.isUserPick ? 'text-accent font-bold' : 'text-text-muted'
+            )}>
+              {pick.isUserPick ? 'YOU' : `T${pick.teamNumber}`}
+            </span>
           </div>
         )
       })}
