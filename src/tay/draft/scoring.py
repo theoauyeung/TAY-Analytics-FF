@@ -41,11 +41,13 @@ def roster_fit(
         starters_still_needed = max(0, required - filled)
 
         if starters_still_needed > 0:
-            score = 1.0 + 0.15 * starters_still_needed
+            score = 1.0 + 0.20 * starters_still_needed
         elif total_skill_filled >= total_skill_required:
-            score = 0.6
+            score = 0.50
         else:
-            score = 0.85
+            # Starters full, competing for FLEX — apply a mild penalty so
+            # positions with unfilled starters are meaningfully preferred.
+            score = 0.75
     else:
         if filled == 0:
             score = 1.2

@@ -138,7 +138,18 @@ function loadPersistedState(): LiveDraftState {
     if (!raw) return INITIAL_STATE
     const parsed = JSON.parse(raw) as LiveDraftState
     if (!parsed.config || !Array.isArray(parsed.picks)) return INITIAL_STATE
-    return { ...INITIAL_STATE, ...parsed, draftPhase: parsed.draftPhase ?? 'setup' }
+    // Always apply current rosterConfig/totalRounds defaults so setting changes
+    // (e.g. FLEX count) take effect without requiring a manual reset.
+    return {
+      ...INITIAL_STATE,
+      ...parsed,
+      config: {
+        ...parsed.config,
+        rosterConfig: INITIAL_STATE.config.rosterConfig,
+        totalRounds: INITIAL_STATE.config.totalRounds,
+      },
+      draftPhase: parsed.draftPhase ?? 'setup',
+    }
   } catch {
     return INITIAL_STATE
   }
