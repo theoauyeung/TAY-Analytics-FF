@@ -12,7 +12,7 @@ class ReplacementConfig:
     roster_rb: int = 2
     roster_wr: int = 2
     roster_te: int = 1
-    roster_flex: int = 1
+    roster_flex: int = 2
 
 
 def get_replacement_spots(config: ReplacementConfig) -> dict[str, int]:
@@ -40,11 +40,11 @@ def compute_replacement_levels(
             levels[pos] = 0.0
             continue
         row = conn.execute("""
-            SELECT pr.mean_projection
+            SELECT COALESCE(pr.blended_projection, pr.mean_projection)
             FROM projections pr
             JOIN players pl ON pl.gsis_id = pr.gsis_id
             WHERE pr.season = ? AND pr.model_version = ? AND pl.position = ?
-            ORDER BY pr.mean_projection DESC
+            ORDER BY COALESCE(pr.blended_projection, pr.mean_projection) DESC
             LIMIT 1 OFFSET ?
         """, [season, model_version, pos, n - 1]).fetchone()
         levels[pos] = float(row[0]) if row else 0.0
