@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import clsx from 'clsx'
 import { useDraftState } from '../../hooks/useDraftState'
 import { useRecommendation } from '../../hooks/useRecommendation'
 import { PositionBadge } from '../ui/Badge'
+import { PickHistoryBoard } from './PickHistoryBoard'
 import type { Position, PlayerDetail, RosterConfig } from '../../types'
 
 interface SlotDef {
@@ -56,6 +58,7 @@ function strengthLabel(count: number, needed: number): { label: string; color: s
 }
 
 export function MyRoster() {
+  const [tab, setTab] = useState<'roster' | 'board'>('roster')
   const { state, userPicks } = useDraftState()
   const { recommendation: reco } = useRecommendation()
 
@@ -93,14 +96,39 @@ export function MyRoster() {
 
   return (
     <div className="w-72 flex-shrink-0 border-l border-border flex flex-col overflow-hidden">
-      {/* Header */}
-      <div className="px-4 pt-3 pb-2 border-b border-border flex-shrink-0">
-        <div className="text-xs font-bold tracking-wide text-text-muted uppercase">My Roster</div>
-        <div className="text-xs text-text-muted mt-0.5">
-          {userRoster.length} / {config.totalRounds} picks
+      {/* Header + tabs */}
+      <div className="px-4 pt-3 pb-0 border-b border-border flex-shrink-0">
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-xs font-bold tracking-wide text-text-muted uppercase">
+            {tab === 'roster' ? 'My Roster' : 'Pick Board'}
+          </div>
+          <div className="text-xs text-text-muted">
+            {tab === 'roster'
+              ? `${userRoster.length} / ${config.totalRounds} picks`
+              : `${state.picks.length} picks made`}
+          </div>
+        </div>
+        <div className="flex gap-1 -mb-px">
+          {(['roster', 'board'] as const).map(t => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={clsx(
+                'px-3 py-1.5 text-xs font-medium rounded-t-md border border-b-0 transition-colors',
+                tab === t
+                  ? 'border-border bg-bg-primary text-text-primary'
+                  : 'border-transparent text-text-muted hover:text-text-secondary'
+              )}
+            >
+              {t === 'roster' ? 'Roster' : 'All Picks'}
+            </button>
+          ))}
         </div>
       </div>
 
+      {tab === 'board' && <PickHistoryBoard />}
+
+      {tab === 'roster' && <>
       {/* Roster slots */}
       <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1">
         {filled.map(({ slot, player }, i) => (
@@ -166,6 +194,7 @@ export function MyRoster() {
           </div>
         )}
       </div>
+      </>}
     </div>
   )
 }
