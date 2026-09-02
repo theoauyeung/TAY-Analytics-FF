@@ -2,8 +2,8 @@ services:
   - type: web
     name: tay-analytics-api
     runtime: python
-    buildCommand: pip install -e .
-    startCommand: python scripts/ingest/ingest_espn_projections.py --season 2026; python scripts/rankings/compute_valuations.py --season 2026; uvicorn tay.api.app:app --host 0.0.0.0 --port $PORT
+    buildCommand: pip install -e . && python scripts/ingest/ingest_espn_projections.py --season 2026 && python scripts/rankings/compute_valuations.py --season 2026
+    startCommand: uvicorn tay.api.app:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: ALLOWED_ORIGINS
         value: https://tay-analytics.vercel.app  # update after Vercel deploy
