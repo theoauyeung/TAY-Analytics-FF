@@ -34,7 +34,7 @@ async def lifespan(app: FastAPI):
 def _refresh_on_render(conn) -> None:
     from pathlib import Path
     print('[startup] Render env detected — loading consensus snapshot and recomputing VOR...')
-    snapshot = Path(__file__).parent.parent.parent / 'data' / 'consensus_projections_2026.csv'
+    snapshot = Path(__file__).parent.parent.parent.parent / 'data' / 'consensus_projections_2026.csv'
     if snapshot.exists():
         try:
             conn.execute("DELETE FROM consensus_projections WHERE season = 2026")
