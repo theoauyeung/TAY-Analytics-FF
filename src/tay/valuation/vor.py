@@ -4,12 +4,13 @@ import duckdb
 
 from tay.valuation.replacement import POSITIONS
 
-# Single-QB PPR scarcity weights. QB is discounted because starter-quality QBs
-# are available deep into drafts (late-round QB strategy). RB is 1.0 (scarcest).
+# PPR scarcity weights. In PPR leagues WR is as scarce as RB — both compete
+# equally for flex spots and elite WR/RB are equally hard to replace on waivers.
+# Equalizing removes the systematic RB bias that inflated draft recommendations.
 _SCARCITY_WEIGHT: dict[str, float] = {
     'QB': 0.30,
     'RB': 1.0,
-    'WR': 0.85,
+    'WR': 1.0,
     'TE': 0.50,
 }
 

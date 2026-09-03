@@ -16,8 +16,12 @@ class ReplacementConfig:
 
 
 def get_replacement_spots(config: ReplacementConfig) -> dict[str, int]:
-    flex_rb = round(config.teams * config.roster_flex * 0.5)
-    flex_wr = config.teams * config.roster_flex - flex_rb
+    # In PPR leagues WR is more commonly started in FLEX than RB (~70% of flex
+    # starts go to WR). Using 70/30 sets a lower WR replacement level (more
+    # WR spots counted = replacement bar is a weaker player) and a higher RB
+    # replacement level — both reducing the systematic RB premium.
+    flex_wr = round(config.teams * config.roster_flex * 0.70)
+    flex_rb = config.teams * config.roster_flex - flex_wr
     return {
         'QB': config.teams * config.roster_qb,
         'RB': config.teams * config.roster_rb + flex_rb,

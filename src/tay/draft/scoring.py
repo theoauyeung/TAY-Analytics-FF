@@ -5,6 +5,8 @@ from tay.draft.models import DraftState, PlayerProjection, Recommendation
 _FLEX_ELIGIBLE = {'RB', 'WR', 'TE'}
 _STARTER_REQUIREMENTS = {'QB': 1, 'RB': 2, 'WR': 2, 'TE': 1}
 _SCARCITY_THRESHOLDS: dict[str, int] = {'QB': 4, 'TE': 4, 'RB': 8, 'WR': 8}
+# In PPR leagues WR FLEX starts are more valuable/reliable than RB FLEX starts.
+_FLEX_COMPETITION_SCORE: dict[str, float] = {'RB': 0.68, 'WR': 0.82, 'TE': 0.70}
 
 
 def future_availability(player: PlayerProjection, current_pick: int, picks_until_next: int) -> float:
@@ -45,9 +47,9 @@ def roster_fit(
         elif total_skill_filled >= total_skill_required:
             score = 0.50
         else:
-            # Starters full, competing for FLEX — apply a mild penalty so
-            # positions with unfilled starters are meaningfully preferred.
-            score = 0.75
+            # Starters full, competing for FLEX. WR gets a PPR bonus because
+            # receiver FLEX starts are more reliable than RB FLEX starts.
+            score = _FLEX_COMPETITION_SCORE.get(pos, 0.75)
     else:
         if filled == 0:
             score = 1.2
