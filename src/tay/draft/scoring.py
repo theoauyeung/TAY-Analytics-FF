@@ -93,7 +93,10 @@ def score_player(
         scarcity_premium = max(0.0, min(0.5, 0.5 * (1.0 - top_tier_count / threshold)))
 
     rf = roster_fit(player, state.user_roster, state.league_settings.roster_config)
-    urgency_factor = 1.0 + cliff_premium + scarcity_premium
+    # When a position is already stacked (rf < 1.0), dampen the urgency extras.
+    # Positional scarcity is only relevant to YOU if you actually need the position.
+    urgency_damp = min(1.0, rf)
+    urgency_factor = 1.0 + (cliff_premium + scarcity_premium) * urgency_damp
     now_vs_wait = 1.5 - 0.5 * survival_prob
 
     draft_score = player.vor * urgency_factor * rf * now_vs_wait
